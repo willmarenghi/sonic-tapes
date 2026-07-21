@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 const BAND_SIZE = 5;
-const AVATAR_COLORS = ["#b8a9e6", "#cdb37a", "#cfa8b0", "#a8c0a0", "#9aa6c9"];
+const AVATAR_COLORS = ["#d9714f", "#cdb37a", "#cfa8b0", "#a8c0a0", "#9aa6c9"];
 
 // Swipe tuning: an "open" swipe must start within EDGE_WIDTH of the left
 // edge (so it doesn't fire mid-scroll); either direction just needs enough
