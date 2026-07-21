@@ -73,7 +73,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Logo />
           <span className="font-display text-2xl lowercase text-foreground">sonic tapes</span>
         </Link>
-        <p className="mt-1 text-xs lowercase text-muted">song ideas &amp; feedback</p>
+        <p className="mt-1 text-xs lowercase text-muted">
+          song library for thoughts, feedback, and innovation
+        </p>
 
         <Link
           href="/upload"

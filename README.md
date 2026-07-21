@@ -35,12 +35,15 @@ free tier), but the shell without a session shows no band data.
 
 1. Go to [supabase.com](https://supabase.com) and create a new project (the
    free tier is enough for 5 users).
-2. In the SQL Editor, run the migration in
-   [`supabase/migrations/0001_init.sql`](./supabase/migrations/0001_init.sql).
-   This creates:
+2. In the SQL Editor, run every file in
+   [`supabase/migrations`](./supabase/migrations), in order (`0001_...`,
+   `0002_...`, etc.). If you already ran an earlier one on a live project,
+   you only need to run the newer files you haven't run yet. Together they
+   set up:
    - `profiles` (mirrors `auth.users`, auto-populated by a trigger)
    - `posts` (the only content table — insert + select only, no update/delete
-     policies, so posts are immutable once created)
+     policies, so posts are immutable once created; audio is required to
+     start a new song idea but optional on a reply)
    - `audio` and `cover-art` storage buckets, plus policies so any signed-in
      band member can upload/read files
 3. **Authentication → Providers → Email**: leave Email enabled. Under

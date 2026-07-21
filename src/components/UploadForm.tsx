@@ -20,8 +20,9 @@ export function UploadForm({ defaultReplyTo }: { defaultReplyTo?: string }) {
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
   const [replyTo, setReplyTo] = useState(defaultReplyTo ?? "");
-  const [audioMode, setAudioMode] = useState<"record" | "file">("record");
   const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [recorderKey, setRecorderKey] = useState(0);
+  const [fileInputKey, setFileInputKey] = useState(0);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,10 +36,20 @@ export function UploadForm({ defaultReplyTo }: { defaultReplyTo?: string }) {
       .then(({ data }) => setPosts((data as PostOption[]) ?? []));
   }, []);
 
+  function handleRecorded(file: File | null) {
+    setAudioFile(file);
+    if (file) setFileInputKey((k) => k + 1);
+  }
+
+  function handleFilePicked(file: File | null) {
+    setAudioFile(file);
+    if (file) setRecorderKey((k) => k + 1);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!audioFile) {
-      setError("An audio file is required.");
+    if (!replyTo && !audioFile) {
+      setError("An audio file is required to start a new song idea.");
       return;
     }
 
@@ -57,14 +68,15 @@ export function UploadForm({ defaultReplyTo }: { defaultReplyTo?: string }) {
         return;
       }
 
-      const audioPath = storagePath(user.id, audioFile);
-      const { error: audioError } = await supabase.storage
-        .from("audio")
-        .upload(audioPath, audioFile);
-      if (audioError) throw audioError;
-      const {
-        data: { publicUrl: audioUrl },
-      } = supabase.storage.from("audio").getPublicUrl(audioPath);
+      let audioUrl: string | null = null;
+      if (audioFile) {
+        const audioPath = storagePath(user.id, audioFile);
+        const { error: audioError } = await supabase.storage
+          .from("audio")
+          .upload(audioPath, audioFile);
+        if (audioError) throw audioError;
+        audioUrl = supabase.storage.from("audio").getPublicUrl(audioPath).data.publicUrl;
+      }
 
       let coverUrl: string | null = null;
       if (coverFile) {
@@ -129,50 +141,20 @@ export function UploadForm({ defaultReplyTo }: { defaultReplyTo?: string }) {
       </div>
 
       <div>
-        <span className="mb-1 block text-sm text-muted">Audio</span>
-        <div className="mb-2 flex gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              setAudioMode("record");
-              setAudioFile(null);
-            }}
-            className={`min-h-9 rounded-md px-3 py-1.5 text-sm ${
-              audioMode === "record"
-                ? "bg-accent text-accent-foreground"
-                : "border border-line text-muted"
-            }`}
-          >
-            Record
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setAudioMode("file");
-              setAudioFile(null);
-            }}
-            className={`min-h-9 rounded-md px-3 py-1.5 text-sm ${
-              audioMode === "file"
-                ? "bg-accent text-accent-foreground"
-                : "border border-line text-muted"
-            }`}
-          >
-            Upload a file
-          </button>
-        </div>
-
-        {audioMode === "record" ? (
-          <VoiceRecorder key="record" onRecorded={setAudioFile} />
-        ) : (
+        <span className="mb-1 block text-sm text-muted">
+          Audio{replyTo && " (optional for a reply)"}
+        </span>
+        <div className="flex flex-wrap items-center gap-3">
+          <VoiceRecorder key={recorderKey} onRecorded={handleRecorded} />
           <input
-            key="file"
+            key={fileInputKey}
             id="audio"
             type="file"
             accept="audio/*"
-            onChange={(e) => setAudioFile(e.target.files?.[0] ?? null)}
-            className="w-full text-base text-muted file:mr-3 file:min-h-11 file:rounded-md file:border-0 file:bg-line file:px-3 file:py-2 file:text-foreground"
+            onChange={(e) => handleFilePicked(e.target.files?.[0] ?? null)}
+            className="text-sm text-muted file:mr-3 file:min-h-11 file:rounded-md file:border-0 file:bg-line file:px-3 file:py-2 file:text-foreground"
           />
-        )}
+        </div>
       </div>
 
       <div>
@@ -190,7 +172,7 @@ export function UploadForm({ defaultReplyTo }: { defaultReplyTo?: string }) {
 
       <div>
         <label htmlFor="notes" className="mb-1 block text-sm text-muted">
-          Notes (markdown supported — chords, description, etc.)
+          Notes (chords, description, etc.)
         </label>
         <textarea
           id="notes"

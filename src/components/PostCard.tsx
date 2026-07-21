@@ -34,7 +34,7 @@ export function PostCard({ post, depth = 0 }: { post: PostWithReplies; depth?: n
             href={`/upload?replyTo=${post.id}`}
             className="flex min-h-9 shrink-0 items-center rounded-md border border-line px-2.5 text-xs text-muted hover:border-accent hover:text-foreground"
           >
-            Reply with audio
+            Reply
           </Link>
         </div>
 
@@ -50,9 +50,11 @@ export function PostCard({ post, depth = 0 }: { post: PostWithReplies; depth?: n
           </div>
         )}
 
-        <div className="mt-3">
-          <AudioPlayer src={post.audio_url} />
-        </div>
+        {post.audio_url && (
+          <div className="mt-3">
+            <AudioPlayer src={post.audio_url} />
+          </div>
+        )}
 
         {post.notes && (
           <div className="mt-3">

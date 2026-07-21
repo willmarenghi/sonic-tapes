@@ -8,7 +8,7 @@ export type Post = {
   id: string;
   title: string;
   uploader_id: string;
-  audio_url: string;
+  audio_url: string | null;
   cover_art_url: string | null;
   notes: string | null;
   created_at: string;
