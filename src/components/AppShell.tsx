@@ -1,12 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 const BAND_SIZE = 5;
 const AVATAR_COLORS = ["#b8a9e6", "#cdb37a", "#cfa8b0", "#a8c0a0", "#9aa6c9"];
+
+// Swipe tuning: an "open" swipe must start within EDGE_WIDTH of the left
+// edge (so it doesn't fire mid-scroll); either direction just needs enough
+// horizontal travel and to not be mostly-vertical (a normal page scroll).
+const EDGE_WIDTH = 24;
+const SWIPE_DISTANCE = 60;
 
 function Logo({ className = "h-7 w-7" }: { className?: string }) {
   return (
@@ -17,6 +23,14 @@ function Logo({ className = "h-7 w-7" }: { className?: string }) {
       <circle cx="12" cy="12" r="5" fill="none" stroke="currentColor" strokeWidth="1" />
       <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" strokeWidth="1" />
       <circle cx="12" cy="12" r="1.25" fill="currentColor" />
+    </svg>
+  );
+}
+
+function MenuIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
+      <path strokeLinecap="round" d="M3.5 6.5h17M3.5 12h17M3.5 17.5h17" />
     </svg>
   );
 }
@@ -121,6 +135,63 @@ function BandRoster({
   );
 }
 
+function SidebarContent({
+  label,
+  selectedUserId,
+  onSelectUser,
+  onSignOut,
+  onNavigate,
+}: {
+  label: string;
+  selectedUserId: string | null;
+  onSelectUser?: (id: string | null) => void;
+  onSignOut: () => void;
+  onNavigate?: () => void;
+}) {
+  return (
+    <>
+      <Link href="/" onClick={onNavigate} className="flex items-center gap-2">
+        <Logo />
+        <span className="font-display text-2xl lowercase text-foreground">sonic tapes</span>
+      </Link>
+      <p className="mt-1 text-xs lowercase text-muted">
+        song library for thoughts, feedback, and innovation
+      </p>
+
+      <Link
+        href="/upload"
+        onClick={onNavigate}
+        className="mt-6 flex min-h-11 items-center justify-center rounded-md bg-accent text-sm font-medium lowercase text-accent-foreground transition hover:brightness-110"
+      >
+        + new idea
+      </Link>
+
+      {onSelectUser && (
+        <BandRoster
+          selectedUserId={selectedUserId}
+          onSelectUser={(id) => {
+            onSelectUser(id);
+            onNavigate?.();
+          }}
+        />
+      )}
+
+      <div className="flex-1" />
+
+      <div className="border-t border-dashed border-line-dashed pt-4">
+        <p className="truncate text-sm text-muted">{label}</p>
+        <button
+          type="button"
+          onClick={onSignOut}
+          className="mt-3 min-h-11 w-full rounded-md border border-dashed border-line-dashed px-3 text-sm lowercase text-muted transition hover:text-foreground"
+        >
+          sign out
+        </button>
+      </div>
+    </>
+  );
+}
+
 export function AppShell({
   children,
   selectedUserId = null,
@@ -132,6 +203,8 @@ export function AppShell({
 }) {
   const router = useRouter();
   const label = useProfileLabel();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
 
   async function handleSignOut() {
     const supabase = createClient();
@@ -139,62 +212,84 @@ export function AppShell({
     router.replace("/login");
   }
 
+  function handleTouchStart(e: React.TouchEvent) {
+    const t = e.touches[0];
+    touchStart.current = { x: t.clientX, y: t.clientY };
+  }
+
+  function handleTouchMove(e: React.TouchEvent) {
+    const start = touchStart.current;
+    if (!start) return;
+    const t = e.touches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    if (Math.abs(dy) > Math.abs(dx)) return;
+
+    if (!drawerOpen && start.x < EDGE_WIDTH && dx > SWIPE_DISTANCE) {
+      setDrawerOpen(true);
+      touchStart.current = null;
+    } else if (drawerOpen && dx < -SWIPE_DISTANCE) {
+      setDrawerOpen(false);
+      touchStart.current = null;
+    }
+  }
+
+  function handleTouchEnd() {
+    touchStart.current = null;
+  }
+
   return (
-    <div className="flex min-h-screen flex-1 flex-col md:flex-row">
-      <header className="flex items-center justify-between border-b border-line px-4 py-3 md:hidden">
+    <div
+      className="flex min-h-screen flex-1 flex-col md:flex-row"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between border-b border-line bg-background px-4 md:hidden">
+        <button
+          type="button"
+          onClick={() => setDrawerOpen(true)}
+          aria-label="Open menu"
+          className="flex h-11 w-11 -ml-2 items-center justify-center text-foreground"
+        >
+          <MenuIcon />
+        </button>
         <Link href="/" className="flex items-center gap-2">
-          <Logo />
+          <Logo className="h-6 w-6" />
           <span className="font-display text-lg lowercase text-foreground">sonic tapes</span>
         </Link>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/upload"
-            className="flex min-h-11 items-center rounded-md bg-accent px-3 text-sm font-medium lowercase text-accent-foreground"
-          >
-            + new idea
-          </Link>
-          <button
-            type="button"
-            onClick={handleSignOut}
-            className="flex min-h-11 items-center text-sm lowercase text-muted hover:text-foreground"
-          >
-            sign out
-          </button>
-        </div>
+        <div className="h-11 w-11" />
       </header>
 
+      {drawerOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          onClick={() => setDrawerOpen(false)}
+          aria-hidden
+        />
+      )}
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex w-72 -translate-x-full flex-col overflow-y-auto border-r border-line bg-surface px-6 py-8 transition-transform duration-300 ease-out md:hidden ${
+          drawerOpen ? "translate-x-0" : ""
+        }`}
+      >
+        <SidebarContent
+          label={label}
+          selectedUserId={selectedUserId}
+          onSelectUser={onSelectUser}
+          onSignOut={handleSignOut}
+          onNavigate={() => setDrawerOpen(false)}
+        />
+      </aside>
+
       <aside className="hidden w-72 shrink-0 flex-col border-r border-line bg-surface px-6 py-8 md:flex">
-        <Link href="/" className="flex items-center gap-2">
-          <Logo />
-          <span className="font-display text-2xl lowercase text-foreground">sonic tapes</span>
-        </Link>
-        <p className="mt-1 text-xs lowercase text-muted">
-          song library for thoughts, feedback, and innovation
-        </p>
-
-        <Link
-          href="/upload"
-          className="mt-6 flex min-h-11 items-center justify-center rounded-md bg-accent text-sm font-medium lowercase text-accent-foreground transition hover:brightness-110"
-        >
-          + new idea
-        </Link>
-
-        {onSelectUser && (
-          <BandRoster selectedUserId={selectedUserId} onSelectUser={onSelectUser} />
-        )}
-
-        <div className="flex-1" />
-
-        <div className="border-t border-dashed border-line-dashed pt-4">
-          <p className="truncate text-sm text-muted">{label}</p>
-          <button
-            type="button"
-            onClick={handleSignOut}
-            className="mt-3 min-h-11 w-full rounded-md border border-dashed border-line-dashed px-3 text-sm lowercase text-muted transition hover:text-foreground"
-          >
-            sign out
-          </button>
-        </div>
+        <SidebarContent
+          label={label}
+          selectedUserId={selectedUserId}
+          onSelectUser={onSelectUser}
+          onSignOut={handleSignOut}
+        />
       </aside>
 
       <main className="flex-1">
