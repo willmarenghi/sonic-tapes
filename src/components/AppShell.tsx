@@ -178,6 +178,14 @@ function SidebarContent({
 
       <div className="flex-1" />
 
+      <Link
+        href="/covers"
+        onClick={onNavigate}
+        className="mb-4 flex min-h-11 items-center justify-center rounded-md border border-line px-3 text-sm lowercase text-muted transition hover:border-accent hover:text-foreground"
+      >
+        cover songs
+      </Link>
+
       <div className="border-t border-dashed border-line-dashed pt-4">
         <p className="truncate text-sm text-muted">{label}</p>
         <button
