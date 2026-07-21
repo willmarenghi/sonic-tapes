@@ -14,11 +14,15 @@ type CoverSong = {
   added_by: string | null;
 };
 
-const STATUSES: { value: CoverStatus; color: string }[] = [
-  { value: "not_started", color: "#e15c4f" },
-  { value: "partial", color: "#e0b23e" },
-  { value: "ready", color: "#6fbf73" },
+const STATUSES: { value: CoverStatus; color: string; label: string }[] = [
+  { value: "not_started", color: "#e15c4f", label: "not learned" },
+  { value: "partial", color: "#e0b23e", label: "in progress" },
+  { value: "ready", color: "#6fbf73", label: "stage ready" },
 ];
+
+const STATUS_ORDER: Record<CoverStatus, number> = { not_started: 0, partial: 1, ready: 2 };
+
+type SortMode = "alpha" | "status";
 
 function errorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
@@ -41,7 +45,7 @@ function StatusDots({
         <button
           key={s.value}
           type="button"
-          aria-label={s.value.replace("_", " ")}
+          aria-label={s.label}
           onClick={() => onChange(song.id, s.value)}
           className="h-4 w-4 shrink-0 rounded-full border-2 transition"
           style={{
@@ -58,10 +62,12 @@ function CoversPageContent() {
   const [songs, setSongs] = useState<CoverSong[] | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [title, setTitle] = useState("");
+  const [songTitle, setSongTitle] = useState("");
+  const [artist, setArtist] = useState("");
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [sortMode, setSortMode] = useState<SortMode>("alpha");
 
   useEffect(() => {
     const supabase = createClient();
@@ -98,14 +104,15 @@ function CoversPageContent() {
     const supabase = createClient();
     const { error } = await supabase
       .from("cover_songs")
-      .insert({ title: title.trim(), added_by: currentUserId });
+      .insert({ title: `${songTitle.trim()} - ${artist.trim()}`, added_by: currentUserId });
 
     setAdding(false);
     if (error) {
       setError(errorMessage(error));
       return;
     }
-    setTitle("");
+    setSongTitle("");
+    setArtist("");
     setReloadKey((k) => k + 1);
   }
 
@@ -154,6 +161,12 @@ function CoversPageContent() {
     return <p className="text-muted">Loading…</p>;
   }
 
+  const sortedSongs = [...songs].sort((a, b) =>
+    sortMode === "alpha"
+      ? a.title.localeCompare(b.title)
+      : STATUS_ORDER[a.status] - STATUS_ORDER[b.status]
+  );
+
   return (
     <div>
       <h1 className="mb-1 font-display text-2xl lowercase text-foreground">cover songs</h1>
@@ -161,13 +174,21 @@ function CoversPageContent() {
         songs the band wants to learn, and how far along we are on each one.
       </p>
 
-      <form onSubmit={handleAdd} className="mb-6 flex gap-3">
+      <form onSubmit={handleAdd} className="flex flex-wrap gap-3">
         <input
           type="text"
           required
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="add a cover song…"
+          value={songTitle}
+          onChange={(e) => setSongTitle(e.target.value)}
+          placeholder="song title"
+          className="min-w-0 flex-1 rounded-md border border-line bg-surface px-3 py-2 text-base text-foreground outline-none placeholder:text-muted focus:border-accent"
+        />
+        <input
+          type="text"
+          required
+          value={artist}
+          onChange={(e) => setArtist(e.target.value)}
+          placeholder="artist"
           className="min-w-0 flex-1 rounded-md border border-line bg-surface px-3 py-2 text-base text-foreground outline-none placeholder:text-muted focus:border-accent"
         />
         <button
@@ -179,33 +200,76 @@ function CoversPageContent() {
         </button>
       </form>
 
+      <div className="mt-3 mb-6 flex flex-wrap items-center gap-4 text-xs text-muted">
+        {STATUSES.map((s) => (
+          <span key={s.value} className="flex items-center gap-1.5">
+            <span
+              className="h-2.5 w-2.5 rounded-full"
+              style={{ background: s.color }}
+              aria-hidden
+            />
+            {s.label}
+          </span>
+        ))}
+      </div>
+
       {error && <p className="mb-4 text-sm text-red-400">{error}</p>}
 
       {songs.length === 0 ? (
         <p className="text-muted">No cover songs yet — add one above.</p>
       ) : (
-        <ul className="space-y-2">
-          {songs.map((song) => (
-            <li
-              key={song.id}
-              className="flex items-center justify-between gap-3 rounded-lg border-2 border-line bg-surface px-4 py-3"
-            >
-              <span className="min-w-0 truncate text-foreground">{song.title}</span>
-              <div className="flex shrink-0 items-center gap-4">
-                <StatusDots song={song} onChange={handleStatusChange} />
-                {(song.added_by === currentUserId || isAdmin) && (
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(song.id)}
-                    className="text-xs text-red-400 hover:underline"
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
+        <>
+          <div className="mb-4 flex items-center gap-2 text-sm">
+            <span className="text-muted">sort:</span>
+            <div className="flex shrink-0 overflow-hidden rounded-md border border-line">
+              <button
+                type="button"
+                onClick={() => setSortMode("alpha")}
+                className={`min-h-9 px-3 text-xs lowercase transition ${
+                  sortMode === "alpha"
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted hover:text-foreground"
+                }`}
+              >
+                a–z
+              </button>
+              <button
+                type="button"
+                onClick={() => setSortMode("status")}
+                className={`min-h-9 px-3 text-xs lowercase transition ${
+                  sortMode === "status"
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted hover:text-foreground"
+                }`}
+              >
+                by status
+              </button>
+            </div>
+          </div>
+
+          <ul className="space-y-2">
+            {sortedSongs.map((song) => (
+              <li
+                key={song.id}
+                className="flex items-center justify-between gap-3 rounded-lg border-2 border-line bg-surface px-4 py-3"
+              >
+                <span className="min-w-0 truncate text-foreground">{song.title}</span>
+                <div className="flex shrink-0 items-center gap-4">
+                  <StatusDots song={song} onChange={handleStatusChange} />
+                  {(song.added_by === currentUserId || isAdmin) && (
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(song.id)}
+                      className="text-xs text-red-400 hover:underline"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </div>
   );

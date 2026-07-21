@@ -181,7 +181,12 @@ function SidebarContent({
       <Link
         href="/covers"
         onClick={onNavigate}
-        className="mb-4 flex min-h-11 items-center justify-center rounded-md border border-line px-3 text-sm lowercase text-muted transition hover:border-accent hover:text-foreground"
+        className="mb-4 flex min-h-11 items-center justify-center rounded-md border px-3 text-sm lowercase transition hover:brightness-110"
+        style={{
+          borderColor: "#6fbf73",
+          color: "#a8d6ad",
+          background: "rgba(111, 191, 115, 0.08)",
+        }}
       >
         cover songs
       </Link>
