@@ -5,15 +5,31 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { BASE_PATH } from "@/lib/basePath";
 
+// A failed magic-link verification (expired, already used, or a
+// redirect_to mismatch) lands back here with the reason in the URL
+// fragment instead of throwing — read it once up front instead of
+// silently showing a blank form.
+function readAuthError(): string | null {
+  if (typeof window === "undefined") return null;
+  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const raw = hashParams.get("error_description") || hashParams.get("error");
+  return raw ? decodeURIComponent(raw.replace(/\+/g, " ")) : null;
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(readAuthError);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
+
+    if (window.location.hash.includes("error")) {
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) router.replace("/");
     });
