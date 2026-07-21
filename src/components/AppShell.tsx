@@ -207,6 +207,7 @@ export function AppShell({
   const touchStart = useRef<{ x: number; y: number } | null>(null);
 
   async function handleSignOut() {
+    if (!window.confirm("Sign out?")) return;
     const supabase = createClient();
     await supabase.auth.signOut();
     router.replace("/login");
@@ -283,7 +284,7 @@ export function AppShell({
         />
       </aside>
 
-      <aside className="hidden w-72 shrink-0 flex-col border-r border-line bg-surface px-6 py-8 md:flex">
+      <aside className="hidden w-72 shrink-0 flex-col overflow-y-auto border-r border-line bg-surface px-6 py-8 md:flex">
         <SidebarContent
           label={label}
           selectedUserId={selectedUserId}
