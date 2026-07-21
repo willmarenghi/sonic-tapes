@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { PostWithReplies } from "@/lib/types";
@@ -113,18 +112,6 @@ export function PostCard({
         </div>
 
         {deleteError && <p className="mt-2 text-xs text-red-400">{deleteError}</p>}
-
-        {post.cover_art_url && (
-          <div className="relative mt-3 h-40 w-40 overflow-hidden rounded-md">
-            <Image
-              src={post.cover_art_url}
-              alt=""
-              fill
-              sizes="160px"
-              className="object-cover"
-            />
-          </div>
-        )}
 
         {post.audio_url && (
           <div className="mt-3">
