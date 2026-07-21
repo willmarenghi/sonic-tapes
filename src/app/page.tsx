@@ -33,6 +33,7 @@ function Feed({ selectedUserId }: { selectedUserId: string | null }) {
   const [query, setQuery] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "shelf">("list");
   const [pendingScrollId, setPendingScrollId] = useState<string | null>(null);
+  const [reactionError, setReactionError] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -62,18 +63,43 @@ function Feed({ selectedUserId }: { selectedUserId: string | null }) {
 
   async function handleToggleReaction(postId: string) {
     if (!currentUserId) return;
+    setReactionError(null);
     const supabase = createClient();
     const alreadyReacted = reactions.some(
       (r) => r.post_id === postId && r.user_id === currentUserId
     );
     if (alreadyReacted) {
-      await supabase
+      const { data, error } = await supabase
         .from("reactions")
         .delete()
         .eq("post_id", postId)
-        .eq("user_id", currentUserId);
+        .eq("user_id", currentUserId)
+        .select();
+      if (error) {
+        setReactionError(error.message);
+        return;
+      }
+      if (!data || data.length === 0) {
+        setReactionError(
+          "Nothing was removed — make sure the latest Supabase migration has been run."
+        );
+        return;
+      }
     } else {
-      await supabase.from("reactions").insert({ post_id: postId, user_id: currentUserId });
+      const { data, error } = await supabase
+        .from("reactions")
+        .insert({ post_id: postId, user_id: currentUserId })
+        .select();
+      if (error) {
+        setReactionError(error.message);
+        return;
+      }
+      if (!data || data.length === 0) {
+        setReactionError(
+          "Nothing was saved — make sure the latest Supabase migration has been run."
+        );
+        return;
+      }
     }
     setReloadKey((k) => k + 1);
   }
@@ -118,6 +144,9 @@ function Feed({ selectedUserId }: { selectedUserId: string | null }) {
 
   return (
     <div>
+      {reactionError && (
+        <p className="mb-3 text-xs text-red-400">{reactionError}</p>
+      )}
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <input
           type="search"
