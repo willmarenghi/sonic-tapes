@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { VoiceRecorder } from "@/components/VoiceRecorder";
 import type { Post } from "@/lib/types";
 
 type PostOption = Pick<Post, "id" | "title" | "created_at">;
@@ -19,6 +20,7 @@ export function UploadForm({ defaultReplyTo }: { defaultReplyTo?: string }) {
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
   const [replyTo, setReplyTo] = useState(defaultReplyTo ?? "");
+  const [audioMode, setAudioMode] = useState<"record" | "file">("record");
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -103,7 +105,7 @@ export function UploadForm({ defaultReplyTo }: { defaultReplyTo?: string }) {
           required
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full rounded-md border border-neutral-800 bg-neutral-900 px-3 py-2 text-neutral-100 outline-none focus:border-neutral-600"
+          className="w-full rounded-md border border-neutral-800 bg-neutral-900 px-3 py-2 text-base text-neutral-100 outline-none focus:border-neutral-600"
         />
       </div>
 
@@ -115,7 +117,7 @@ export function UploadForm({ defaultReplyTo }: { defaultReplyTo?: string }) {
           id="replyTo"
           value={replyTo}
           onChange={(e) => setReplyTo(e.target.value)}
-          className="w-full rounded-md border border-neutral-800 bg-neutral-900 px-3 py-2 text-neutral-100 outline-none focus:border-neutral-600"
+          className="w-full rounded-md border border-neutral-800 bg-neutral-900 px-3 py-2 text-base text-neutral-100 outline-none focus:border-neutral-600"
         >
           <option value="">— New song idea —</option>
           {posts.map((post) => (
@@ -127,17 +129,50 @@ export function UploadForm({ defaultReplyTo }: { defaultReplyTo?: string }) {
       </div>
 
       <div>
-        <label htmlFor="audio" className="mb-1 block text-sm text-neutral-300">
-          Audio file
-        </label>
-        <input
-          id="audio"
-          type="file"
-          accept="audio/*"
-          required
-          onChange={(e) => setAudioFile(e.target.files?.[0] ?? null)}
-          className="w-full text-sm text-neutral-300 file:mr-3 file:rounded-md file:border-0 file:bg-neutral-800 file:px-3 file:py-2 file:text-neutral-100"
-        />
+        <span className="mb-1 block text-sm text-neutral-300">Audio</span>
+        <div className="mb-2 flex gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setAudioMode("record");
+              setAudioFile(null);
+            }}
+            className={`min-h-9 rounded-md px-3 py-1.5 text-sm ${
+              audioMode === "record"
+                ? "bg-neutral-100 text-neutral-900"
+                : "border border-neutral-700 text-neutral-300"
+            }`}
+          >
+            Record
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setAudioMode("file");
+              setAudioFile(null);
+            }}
+            className={`min-h-9 rounded-md px-3 py-1.5 text-sm ${
+              audioMode === "file"
+                ? "bg-neutral-100 text-neutral-900"
+                : "border border-neutral-700 text-neutral-300"
+            }`}
+          >
+            Upload a file
+          </button>
+        </div>
+
+        {audioMode === "record" ? (
+          <VoiceRecorder key="record" onRecorded={setAudioFile} />
+        ) : (
+          <input
+            key="file"
+            id="audio"
+            type="file"
+            accept="audio/*"
+            onChange={(e) => setAudioFile(e.target.files?.[0] ?? null)}
+            className="w-full text-base text-neutral-300 file:mr-3 file:min-h-11 file:rounded-md file:border-0 file:bg-neutral-800 file:px-3 file:py-2 file:text-neutral-100"
+          />
+        )}
       </div>
 
       <div>
@@ -149,7 +184,7 @@ export function UploadForm({ defaultReplyTo }: { defaultReplyTo?: string }) {
           type="file"
           accept="image/*"
           onChange={(e) => setCoverFile(e.target.files?.[0] ?? null)}
-          className="w-full text-sm text-neutral-300 file:mr-3 file:rounded-md file:border-0 file:bg-neutral-800 file:px-3 file:py-2 file:text-neutral-100"
+          className="w-full text-sm text-neutral-300 file:mr-3 file:min-h-11 file:rounded-md file:border-0 file:bg-neutral-800 file:px-3 file:py-2 file:text-neutral-100"
         />
       </div>
 
@@ -162,7 +197,7 @@ export function UploadForm({ defaultReplyTo }: { defaultReplyTo?: string }) {
           rows={6}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          className="w-full rounded-md border border-neutral-800 bg-neutral-900 px-3 py-2 font-mono text-sm text-neutral-100 outline-none focus:border-neutral-600"
+          className="w-full rounded-md border border-neutral-800 bg-neutral-900 px-3 py-2 font-mono text-base text-neutral-100 outline-none focus:border-neutral-600"
         />
       </div>
 
@@ -171,7 +206,7 @@ export function UploadForm({ defaultReplyTo }: { defaultReplyTo?: string }) {
       <button
         type="submit"
         disabled={submitting}
-        className="w-full rounded-md bg-neutral-100 px-3 py-2 font-medium text-neutral-900 transition hover:bg-white disabled:opacity-60"
+        className="min-h-11 w-full rounded-md bg-neutral-100 px-3 py-2 font-medium text-neutral-900 transition hover:bg-white disabled:opacity-60"
       >
         {submitting ? "Uploading…" : "Post"}
       </button>
