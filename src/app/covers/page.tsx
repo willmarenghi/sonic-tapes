@@ -24,6 +24,15 @@ const STATUS_ORDER: Record<CoverStatus, number> = { not_started: 0, partial: 1, 
 
 type SortMode = "alpha" | "status";
 
+function splitTitleArtist(title: string): { songTitle: string; artist: string | null } {
+  const separatorIndex = title.indexOf(" - ");
+  if (separatorIndex === -1) return { songTitle: title, artist: null };
+  return {
+    songTitle: title.slice(0, separatorIndex),
+    artist: title.slice(separatorIndex + 3),
+  };
+}
+
 function errorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
   if (err && typeof err === "object" && "message" in err && typeof err.message === "string") {
@@ -248,26 +257,32 @@ function CoversPageContent() {
           </div>
 
           <ul className="space-y-2">
-            {sortedSongs.map((song) => (
-              <li
-                key={song.id}
-                className="flex items-center justify-between gap-3 rounded-lg border-2 border-line bg-surface px-4 py-3"
-              >
-                <span className="min-w-0 truncate text-foreground">{song.title}</span>
-                <div className="flex shrink-0 items-center gap-4">
-                  <StatusDots song={song} onChange={handleStatusChange} />
-                  {(song.added_by === currentUserId || isAdmin) && (
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(song.id)}
-                      className="text-xs text-red-400 hover:underline"
-                    >
-                      Remove
-                    </button>
-                  )}
-                </div>
-              </li>
-            ))}
+            {sortedSongs.map((song) => {
+              const { songTitle, artist } = splitTitleArtist(song.title);
+              return (
+                <li
+                  key={song.id}
+                  className="flex items-center justify-between gap-3 rounded-lg border-2 border-line bg-surface px-4 py-3"
+                >
+                  <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-1.5">
+                    <span className="text-foreground">{songTitle}</span>
+                    {artist && <span className="whitespace-nowrap text-muted">- {artist}</span>}
+                  </div>
+                  <div className="flex shrink-0 items-center gap-4">
+                    <StatusDots song={song} onChange={handleStatusChange} />
+                    {(song.added_by === currentUserId || isAdmin) && (
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(song.id)}
+                        className="text-xs text-red-400 hover:underline"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         </>
       )}
