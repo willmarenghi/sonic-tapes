@@ -114,7 +114,7 @@ export default function LoginPage() {
         ) : (
           <>
             <p className="mb-6 text-sm text-muted">
-              Enter the 6-digit code we sent to{" "}
+              Enter the sign-in code we sent to{" "}
               <span className="text-foreground">{email}</span>.
             </p>
             <form onSubmit={verifyCode} className="space-y-4">
@@ -128,10 +128,10 @@ export default function LoginPage() {
                   inputMode="numeric"
                   autoComplete="one-time-code"
                   required
-                  maxLength={6}
+                  maxLength={10}
                   value={code}
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                  className="w-full rounded-md border border-line bg-surface px-3 py-2 text-center text-lg tracking-[0.5em] text-foreground outline-none focus:border-accent"
+                  className="w-full rounded-md border border-line bg-surface px-3 py-2 text-center text-lg tracking-[0.3em] text-foreground outline-none focus:border-accent"
                 />
               </div>
 
@@ -139,7 +139,7 @@ export default function LoginPage() {
 
               <button
                 type="submit"
-                disabled={loading || code.length !== 6}
+                disabled={loading || code.length < 6}
                 className="min-h-11 w-full rounded-md bg-accent px-3 py-2 font-medium text-accent-foreground transition hover:brightness-110 disabled:opacity-60"
               >
                 {loading ? "Verifying…" : "Verify code"}
