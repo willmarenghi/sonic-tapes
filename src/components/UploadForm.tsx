@@ -43,6 +43,7 @@ export function UploadForm({
   const [recorderKey, setRecorderKey] = useState(0);
   const [fileInputKey, setFileInputKey] = useState(0);
   const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverRemoved, setCoverRemoved] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -103,7 +104,7 @@ export function UploadForm({
         audioUrl = supabase.storage.from("audio").getPublicUrl(audioPath).data.publicUrl;
       }
 
-      let coverUrl = existingCoverUrl;
+      let coverUrl = coverRemoved ? null : existingCoverUrl;
       if (coverFile) {
         const coverPath = storagePath(user.id, coverFile);
         const { error: coverError } = await supabase.storage
@@ -216,16 +217,29 @@ export function UploadForm({
         <label htmlFor="cover" className="mb-1 block text-sm text-muted">
           Cover art (optional)
         </label>
-        {existingCoverUrl && !coverFile && (
-          <div className="relative mb-2 h-24 w-24 overflow-hidden rounded-md">
-            <Image src={existingCoverUrl} alt="" fill sizes="96px" className="object-cover" />
+        {existingCoverUrl && !coverFile && !coverRemoved && (
+          <div className="mb-2 flex items-center gap-3">
+            <div className="relative h-24 w-24 overflow-hidden rounded-md">
+              <Image src={existingCoverUrl} alt="" fill sizes="96px" className="object-cover" />
+            </div>
+            <button
+              type="button"
+              onClick={() => setCoverRemoved(true)}
+              className="min-h-9 rounded-md border border-line px-2.5 text-xs text-red-400 hover:border-red-400"
+            >
+              Remove image
+            </button>
           </div>
         )}
+        {coverRemoved && <p className="mb-2 text-xs text-muted">Image will be removed.</p>}
         <input
           id="cover"
           type="file"
           accept="image/*"
-          onChange={(e) => setCoverFile(e.target.files?.[0] ?? null)}
+          onChange={(e) => {
+            setCoverFile(e.target.files?.[0] ?? null);
+            if (e.target.files?.[0]) setCoverRemoved(false);
+          }}
           className="w-full text-sm text-muted file:mr-3 file:min-h-11 file:rounded-md file:border-0 file:bg-line file:px-3 file:py-2 file:text-foreground"
         />
       </div>
