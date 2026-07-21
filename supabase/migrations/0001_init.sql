@@ -19,6 +19,11 @@ create policy "profiles are readable by authenticated users"
   to authenticated
   using (true);
 
+-- Explicit grants so this works whether or not the project has "Automatically
+-- expose new tables" enabled — RLS policies alone don't grant table access.
+grant usage on schema public to authenticated;
+grant select on public.profiles to authenticated;
+
 -- Auto-create a profile row whenever a user is added in Supabase Auth.
 -- Seed the 5 accounts via the Supabase dashboard (Authentication > Users > Add user).
 -- No password is needed since sign-in is email-code (OTP) only — set
@@ -77,6 +82,10 @@ create policy "users can insert their own posts"
   with check (uploader_id = auth.uid());
 
 -- No update/delete policies are defined on purpose: posts are permanent.
+
+-- Same reasoning as the `profiles` grant above — select + insert only,
+-- matching the RLS policies (no update/delete privilege at all).
+grant select, insert on public.posts to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Storage buckets for audio and cover art
