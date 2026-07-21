@@ -25,17 +25,22 @@ export function PostCard({
   depth = 0,
   currentUserId = null,
   onDeleted,
+  forceExpanded = false,
 }: {
   post: PostWithReplies;
   depth?: number;
   currentUserId?: string | null;
   onDeleted?: () => void;
+  forceExpanded?: boolean;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  // null = no manual choice yet, so a search match (forceExpanded) wins;
+  // once the user explicitly toggles it, their choice takes over.
+  const [manualExpanded, setManualExpanded] = useState<boolean | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const replyCount = post.replies.length;
   const canDelete = currentUserId === post.uploader_id;
+  const expanded = manualExpanded ?? forceExpanded;
 
   async function handleDelete() {
     const descendantCount = countDescendants(post);
@@ -125,7 +130,7 @@ export function PostCard({
         {replyCount > 0 && (
           <button
             type="button"
-            onClick={() => setExpanded((v) => !v)}
+            onClick={() => setManualExpanded(!expanded)}
             className="mt-3 text-sm font-medium text-accent hover:underline"
           >
             {expanded ? "Hide replies" : `See ${replyCount} ${replyCount === 1 ? "reply" : "replies"}`}
@@ -142,6 +147,7 @@ export function PostCard({
               depth={depth + 1}
               currentUserId={currentUserId}
               onDeleted={onDeleted}
+              forceExpanded={forceExpanded}
             />
           ))}
         </div>

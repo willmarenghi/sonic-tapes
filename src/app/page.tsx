@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { buildThreads } from "@/lib/threads";
+import { buildThreads, threadMatchesQuery } from "@/lib/threads";
 import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
 import { PostCard } from "@/components/PostCard";
@@ -13,6 +13,7 @@ function Feed() {
   const [threads, setThreads] = useState<PostWithReplies[] | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     const supabase = createClient();
@@ -51,16 +52,36 @@ function Feed() {
     );
   }
 
+  const trimmedQuery = query.trim().toLowerCase();
+  const visibleThreads = trimmedQuery
+    ? threads.filter((thread) => threadMatchesQuery(thread, trimmedQuery))
+    : threads;
+
   return (
-    <div className="space-y-4">
-      {threads.map((thread) => (
-        <PostCard
-          key={thread.id}
-          post={thread}
-          currentUserId={currentUserId}
-          onDeleted={() => setReloadKey((k) => k + 1)}
-        />
-      ))}
+    <div>
+      <input
+        type="search"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="find a song, note, or bandmate…"
+        className="mb-4 w-full rounded-md border border-line bg-surface px-3 py-2 text-base text-foreground outline-none placeholder:text-muted focus:border-accent"
+      />
+
+      {visibleThreads.length === 0 ? (
+        <p className="text-muted">No matches for &ldquo;{query.trim()}&rdquo;.</p>
+      ) : (
+        <div className="space-y-4">
+          {visibleThreads.map((thread) => (
+            <PostCard
+              key={thread.id}
+              post={thread}
+              currentUserId={currentUserId}
+              onDeleted={() => setReloadKey((k) => k + 1)}
+              forceExpanded={!!trimmedQuery}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

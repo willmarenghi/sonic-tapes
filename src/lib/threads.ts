@@ -32,3 +32,18 @@ export function buildThreads(posts: Post[], profiles: Profile[]): PostWithReplie
 
   return roots;
 }
+
+function postMatchesQuery(post: PostWithReplies, query: string): boolean {
+  return (
+    post.title.toLowerCase().includes(query) ||
+    (post.notes?.toLowerCase().includes(query) ?? false) ||
+    (post.uploader?.name.toLowerCase().includes(query) ?? false)
+  );
+}
+
+// True if this post or anything replying to it (at any depth) matches.
+export function threadMatchesQuery(post: PostWithReplies, query: string): boolean {
+  return (
+    postMatchesQuery(post, query) || post.replies.some((reply) => threadMatchesQuery(reply, query))
+  );
+}
