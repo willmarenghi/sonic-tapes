@@ -13,7 +13,11 @@ export function createClient(): SupabaseClient {
         auth: {
           persistSession: true,
           autoRefreshToken: true,
-          detectSessionInUrl: false,
+          // Magic-link email delivers `#access_token=...` in the redirect URL;
+          // implicit flow lets any browser that opens the link complete sign-in
+          // (no code-verifier tying it to the device that requested the link).
+          detectSessionInUrl: true,
+          flowType: "implicit",
         },
       }
     );

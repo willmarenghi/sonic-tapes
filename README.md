@@ -11,13 +11,17 @@ who can read or write what — not the web server, since there isn't one.
 
 ## How auth works
 
-Sign-in is email + one-time code, no passwords:
+Sign-in is email + magic link, no passwords:
 
-1. Enter your email → Supabase emails a 6-digit code.
-2. Enter the code → Supabase issues a session, stored in the browser.
+1. Enter your email → Supabase emails a sign-in link.
+2. Open the link (any device/browser — e.g. tap it from your phone's Mail
+   app) → it opens the site and signs that browser in.
 
 No public signup — only the 5 accounts created ahead of time (see below) can
-request a code; everyone else's request is rejected.
+request a link; everyone else's request is rejected. Supabase's default
+built-in mailer sends this out of the box — no SMTP setup required (customizing
+the email's wording requires connecting a custom SMTP provider, which isn't
+necessary for this to work).
 
 Because this is a static site, "you must be logged in to see `/`" is enforced
 client-side (a redirect to `/login` if there's no session) rather than by a
@@ -43,13 +47,10 @@ free tier), but the shell without a session shows no band data.
    **Auth Settings**, turn **off** "Allow new users to sign up" — combined
    with `shouldCreateUser: false` in the login code, this guarantees only the
    5 pre-created accounts can ever sign in.
-4. **Authentication → Email Templates → Magic Link**: by default this
-   template sends a clickable link. Replace the body so it sends the bare
-   code instead, e.g.:
-
-   ```
-   Your Sonic Tapes sign-in code is: {{ .Token }}
-   ```
+4. Nothing to configure for the email itself — Supabase's default template
+   for the "Magic Link" email already sends a clickable sign-in link, no
+   custom SMTP needed. (Editing the wording/branding of that email does
+   require custom SMTP, but that's cosmetic, not required to work.)
 
 ## 2. Create the 5 accounts
 
@@ -58,7 +59,7 @@ No public signup — accounts are created manually, no password required.
 1. In the Supabase dashboard: **Authentication → Users → Add user**.
 2. For each of the 5 band members, add their email, add `{"name": "Their Name"}`
    under **User Metadata**, and tick **Auto Confirm User** (no password
-   needed — they'll only ever sign in with an emailed code).
+   needed — they'll only ever sign in with an emailed link).
 3. The `on_auth_user_created` trigger from the migration automatically creates
    a matching row in `profiles`.
 
@@ -119,8 +120,10 @@ from the root).
 
 ## How it works
 
-- **Auth**: email + one-time code via Supabase Auth (`signInWithOtp` /
-  `verifyOtp`), entirely client-side — see "How auth works" above.
+- **Auth**: email magic link via Supabase Auth (`signInWithOtp` with implicit
+  flow), entirely client-side — see "How auth works" above. Implicit flow
+  (rather than the newer PKCE default) means the link works even if it's
+  opened in a different browser/device than the one that requested it.
 - **Route guarding**: `src/components/RequireAuth.tsx` checks for a session
   on mount and redirects to `/login` if there isn't one.
 - **Feed** (`/`): fetches all posts and profiles client-side, builds a reply
