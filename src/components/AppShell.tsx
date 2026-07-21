@@ -8,9 +8,12 @@ import { createClient } from "@/lib/supabase/client";
 function Logo() {
   return (
     <svg viewBox="0 0 24 24" className="h-7 w-7 shrink-0 text-accent" aria-hidden>
-      <circle cx="12" cy="12" r="10.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
-      <circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" strokeWidth="1.5" />
-      <circle cx="12" cy="12" r="2" fill="currentColor" />
+      <circle cx="12" cy="12" r="11" fill="none" stroke="currentColor" strokeWidth="1" />
+      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1" />
+      <circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" strokeWidth="1" />
+      <circle cx="12" cy="12" r="5" fill="none" stroke="currentColor" strokeWidth="1" />
+      <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" strokeWidth="1" />
+      <circle cx="12" cy="12" r="1.25" fill="currentColor" />
     </svg>
   );
 }
