@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { buildThreads } from "@/lib/threads";
 import { RequireAuth } from "@/components/RequireAuth";
-import { NavBar } from "@/components/NavBar";
+import { AppShell } from "@/components/AppShell";
 import { PostCard } from "@/components/PostCard";
 import type { Post, PostWithReplies, Profile } from "@/lib/types";
 
@@ -26,33 +27,42 @@ function Feed() {
   }, []);
 
   if (threads === null) {
-    return <p className="text-center text-neutral-500">Loading…</p>;
+    return <p className="text-muted">Loading…</p>;
   }
 
   if (threads.length === 0) {
     return (
-      <p className="text-center text-neutral-500">
-        No song ideas yet. Be the first to post one.
-      </p>
+      <div>
+        <h2 className="font-display text-2xl lowercase text-foreground">nothing posted yet.</h2>
+        <p className="mt-3 max-w-md text-muted">
+          Record a quick idea or upload an audio file to start the first thread. Anyone can reply
+          with their own take once it&apos;s up.
+        </p>
+        <Link
+          href="/upload"
+          className="mt-5 inline-flex min-h-11 items-center rounded-md bg-accent px-4 text-sm font-medium lowercase text-accent-foreground transition hover:brightness-110"
+        >
+          + post your first idea
+        </Link>
+      </div>
     );
   }
 
   return (
-    <>
+    <div className="space-y-4">
       {threads.map((thread) => (
         <PostCard key={thread.id} post={thread} />
       ))}
-    </>
+    </div>
   );
 }
 
 export default function FeedPage() {
   return (
     <RequireAuth>
-      <NavBar />
-      <main className="mx-auto w-full max-w-2xl flex-1 space-y-6 px-4 py-6">
+      <AppShell>
         <Feed />
-      </main>
+      </AppShell>
     </RequireAuth>
   );
 }

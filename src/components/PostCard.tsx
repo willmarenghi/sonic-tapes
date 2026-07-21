@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { PostWithReplies } from "@/lib/types";
@@ -13,20 +16,23 @@ function formatDate(iso: string) {
 }
 
 export function PostCard({ post, depth = 0 }: { post: PostWithReplies; depth?: number }) {
+  const [expanded, setExpanded] = useState(false);
+  const replyCount = post.replies.length;
+
   return (
-    <div className={depth > 0 ? "border-l border-neutral-800 pl-2 sm:pl-4" : ""}>
-      <article className="rounded-lg border border-neutral-800 bg-neutral-900/50 p-4">
+    <div className={depth > 0 ? "border-l border-line pl-2 sm:pl-4" : ""}>
+      <article className="rounded-xl border-2 border-line bg-surface p-4 shadow-sm shadow-black/20">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <h3 className="break-words font-semibold text-neutral-100">{post.title}</h3>
-            <p className="text-xs text-neutral-500">
+            <h3 className="break-words font-semibold text-foreground">{post.title}</h3>
+            <p className="text-xs text-muted">
               {post.uploader?.name ?? "Unknown"} · {formatDate(post.created_at)}
               {depth > 0 && " · reply"}
             </p>
           </div>
           <Link
             href={`/upload?replyTo=${post.id}`}
-            className="flex min-h-9 shrink-0 items-center rounded-md border border-neutral-700 px-2.5 text-xs text-neutral-300 hover:border-neutral-500 hover:text-neutral-100"
+            className="flex min-h-9 shrink-0 items-center rounded-md border border-line px-2.5 text-xs text-muted hover:border-accent hover:text-foreground"
           >
             Reply with audio
           </Link>
@@ -53,9 +59,19 @@ export function PostCard({ post, depth = 0 }: { post: PostWithReplies; depth?: n
             <Notes>{post.notes}</Notes>
           </div>
         )}
+
+        {replyCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            className="mt-3 text-sm font-medium text-accent hover:underline"
+          >
+            {expanded ? "Hide replies" : `See ${replyCount} ${replyCount === 1 ? "reply" : "replies"}`}
+          </button>
+        )}
       </article>
 
-      {post.replies.length > 0 && (
+      {expanded && replyCount > 0 && (
         <div className="mt-3 space-y-3 pl-2 sm:pl-4">
           {post.replies.map((reply) => (
             <PostCard key={reply.id} post={reply} depth={depth + 1} />

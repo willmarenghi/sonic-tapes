@@ -42,22 +42,20 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-neutral-950 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
-        <h1 className="mb-1 text-2xl font-semibold text-neutral-100">Sonic Tapes</h1>
+        <h1 className="mb-1 font-display text-2xl lowercase text-foreground">sonic tapes</h1>
 
         {sent ? (
-          <p className="text-sm text-neutral-300">
-            Check <span className="text-neutral-100">{email}</span> for a sign-in link.
+          <p className="text-sm text-muted">
+            Check <span className="text-foreground">{email}</span> for a sign-in link.
           </p>
         ) : (
           <>
-            <p className="mb-6 text-sm text-neutral-400">
-              Enter your email to get a sign-in link.
-            </p>
+            <p className="mb-6 text-sm text-muted">Enter your email to get a sign-in link.</p>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label htmlFor="email" className="mb-1 block text-sm text-neutral-300">
+                <label htmlFor="email" className="mb-1 block text-sm text-muted">
                   Email
                 </label>
                 <input
@@ -67,7 +65,7 @@ export default function LoginPage() {
                   autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-md border border-neutral-800 bg-neutral-900 px-3 py-2 text-base text-neutral-100 outline-none focus:border-neutral-600"
+                  className="w-full rounded-md border border-line bg-surface px-3 py-2 text-base text-foreground outline-none focus:border-accent"
                 />
               </div>
 
@@ -76,7 +74,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="min-h-11 w-full rounded-md bg-neutral-100 px-3 py-2 font-medium text-neutral-900 transition hover:bg-white disabled:opacity-60"
+                className="min-h-11 w-full rounded-md bg-accent px-3 py-2 font-medium text-accent-foreground transition hover:brightness-110 disabled:opacity-60"
               >
                 {loading ? "Sending…" : "Send sign-in link"}
               </button>

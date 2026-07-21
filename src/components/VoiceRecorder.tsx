@@ -110,7 +110,7 @@ export function VoiceRecorder({
 
   if (status === "unsupported") {
     return (
-      <p className="text-sm text-neutral-500">
+      <p className="text-sm text-muted">
         Recording isn&apos;t supported in this browser — use the file upload instead.
       </p>
     );
@@ -123,7 +123,7 @@ export function VoiceRecorder({
         <button
           type="button"
           onClick={discardRecording}
-          className="min-h-11 rounded-md border border-neutral-700 px-3 py-2 text-sm text-neutral-300 hover:border-neutral-500 hover:text-neutral-100"
+          className="min-h-11 rounded-md border border-line px-3 py-2 text-sm text-muted hover:border-accent hover:text-foreground"
         >
           Discard &amp; re-record
         </button>
@@ -146,7 +146,7 @@ export function VoiceRecorder({
         <button
           type="button"
           onClick={startRecording}
-          className="flex min-h-11 items-center gap-2 rounded-md border border-neutral-700 px-4 py-2 text-sm text-neutral-100 hover:border-neutral-500"
+          className="flex min-h-11 items-center gap-2 rounded-md border border-line px-4 py-2 text-sm text-foreground hover:border-accent"
         >
           <span className="h-3 w-3 rounded-full bg-red-500" />
           Record

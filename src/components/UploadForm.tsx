@@ -97,7 +97,7 @@ export function UploadForm({ defaultReplyTo }: { defaultReplyTo?: string }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div>
-        <label htmlFor="title" className="mb-1 block text-sm text-neutral-300">
+        <label htmlFor="title" className="mb-1 block text-sm text-muted">
           Title
         </label>
         <input
@@ -105,19 +105,19 @@ export function UploadForm({ defaultReplyTo }: { defaultReplyTo?: string }) {
           required
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full rounded-md border border-neutral-800 bg-neutral-900 px-3 py-2 text-base text-neutral-100 outline-none focus:border-neutral-600"
+          className="w-full rounded-md border border-line bg-surface px-3 py-2 text-base text-foreground outline-none focus:border-accent"
         />
       </div>
 
       <div>
-        <label htmlFor="replyTo" className="mb-1 block text-sm text-neutral-300">
+        <label htmlFor="replyTo" className="mb-1 block text-sm text-muted">
           Replying to (leave blank to start a new song idea)
         </label>
         <select
           id="replyTo"
           value={replyTo}
           onChange={(e) => setReplyTo(e.target.value)}
-          className="w-full rounded-md border border-neutral-800 bg-neutral-900 px-3 py-2 text-base text-neutral-100 outline-none focus:border-neutral-600"
+          className="w-full rounded-md border border-line bg-surface px-3 py-2 text-base text-foreground outline-none focus:border-accent"
         >
           <option value="">— New song idea —</option>
           {posts.map((post) => (
@@ -129,7 +129,7 @@ export function UploadForm({ defaultReplyTo }: { defaultReplyTo?: string }) {
       </div>
 
       <div>
-        <span className="mb-1 block text-sm text-neutral-300">Audio</span>
+        <span className="mb-1 block text-sm text-muted">Audio</span>
         <div className="mb-2 flex gap-2">
           <button
             type="button"
@@ -139,8 +139,8 @@ export function UploadForm({ defaultReplyTo }: { defaultReplyTo?: string }) {
             }}
             className={`min-h-9 rounded-md px-3 py-1.5 text-sm ${
               audioMode === "record"
-                ? "bg-neutral-100 text-neutral-900"
-                : "border border-neutral-700 text-neutral-300"
+                ? "bg-accent text-accent-foreground"
+                : "border border-line text-muted"
             }`}
           >
             Record
@@ -153,8 +153,8 @@ export function UploadForm({ defaultReplyTo }: { defaultReplyTo?: string }) {
             }}
             className={`min-h-9 rounded-md px-3 py-1.5 text-sm ${
               audioMode === "file"
-                ? "bg-neutral-100 text-neutral-900"
-                : "border border-neutral-700 text-neutral-300"
+                ? "bg-accent text-accent-foreground"
+                : "border border-line text-muted"
             }`}
           >
             Upload a file
@@ -170,13 +170,13 @@ export function UploadForm({ defaultReplyTo }: { defaultReplyTo?: string }) {
             type="file"
             accept="audio/*"
             onChange={(e) => setAudioFile(e.target.files?.[0] ?? null)}
-            className="w-full text-base text-neutral-300 file:mr-3 file:min-h-11 file:rounded-md file:border-0 file:bg-neutral-800 file:px-3 file:py-2 file:text-neutral-100"
+            className="w-full text-base text-muted file:mr-3 file:min-h-11 file:rounded-md file:border-0 file:bg-line file:px-3 file:py-2 file:text-foreground"
           />
         )}
       </div>
 
       <div>
-        <label htmlFor="cover" className="mb-1 block text-sm text-neutral-300">
+        <label htmlFor="cover" className="mb-1 block text-sm text-muted">
           Cover art (optional)
         </label>
         <input
@@ -184,12 +184,12 @@ export function UploadForm({ defaultReplyTo }: { defaultReplyTo?: string }) {
           type="file"
           accept="image/*"
           onChange={(e) => setCoverFile(e.target.files?.[0] ?? null)}
-          className="w-full text-sm text-neutral-300 file:mr-3 file:min-h-11 file:rounded-md file:border-0 file:bg-neutral-800 file:px-3 file:py-2 file:text-neutral-100"
+          className="w-full text-sm text-muted file:mr-3 file:min-h-11 file:rounded-md file:border-0 file:bg-line file:px-3 file:py-2 file:text-foreground"
         />
       </div>
 
       <div>
-        <label htmlFor="notes" className="mb-1 block text-sm text-neutral-300">
+        <label htmlFor="notes" className="mb-1 block text-sm text-muted">
           Notes (markdown supported — chords, description, etc.)
         </label>
         <textarea
@@ -197,19 +197,28 @@ export function UploadForm({ defaultReplyTo }: { defaultReplyTo?: string }) {
           rows={6}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          className="w-full rounded-md border border-neutral-800 bg-neutral-900 px-3 py-2 font-mono text-base text-neutral-100 outline-none focus:border-neutral-600"
+          className="w-full rounded-md border border-line bg-surface px-3 py-2 font-mono text-base text-foreground outline-none focus:border-accent"
         />
       </div>
 
       {error && <p className="text-sm text-red-400">{error}</p>}
 
-      <button
-        type="submit"
-        disabled={submitting}
-        className="min-h-11 w-full rounded-md bg-neutral-100 px-3 py-2 font-medium text-neutral-900 transition hover:bg-white disabled:opacity-60"
-      >
-        {submitting ? "Uploading…" : "Post"}
-      </button>
+      <div className="flex gap-3">
+        <button
+          type="button"
+          onClick={() => router.push("/")}
+          className="min-h-11 flex-1 rounded-md border border-line px-3 py-2 font-medium text-muted transition hover:text-foreground"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={submitting}
+          className="min-h-11 flex-1 rounded-md bg-accent px-3 py-2 font-medium text-accent-foreground transition hover:brightness-110 disabled:opacity-60"
+        >
+          {submitting ? "Uploading…" : "Post"}
+        </button>
+      </div>
     </form>
   );
 }

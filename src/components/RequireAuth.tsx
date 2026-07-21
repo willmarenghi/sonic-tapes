@@ -31,7 +31,7 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
   if (!checked) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-sm text-neutral-500">Loading…</p>
+        <p className="text-sm text-muted">Loading…</p>
       </div>
     );
   }
