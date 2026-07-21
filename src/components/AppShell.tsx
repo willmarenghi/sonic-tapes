@@ -68,20 +68,19 @@ function BandRoster({
   const blanks = Math.max(0, BAND_SIZE - members.length);
 
   return (
-    <div className="mt-8 border-t border-dashed border-line-dashed pt-4">
-      <p className="text-xs lowercase tracking-wide text-muted">band</p>
-      <div className="mt-3 flex flex-col gap-1">
+    <div className="mt-8 border-t border-dashed border-line-dashed pt-5">
+      <p className="text-sm lowercase tracking-wide text-muted">band members</p>
+      <div className="mt-4 flex flex-col gap-2">
         <button
           type="button"
           onClick={() => onSelectUser(null)}
-          className={`flex min-h-9 items-center gap-3 rounded-md px-1 text-sm lowercase transition ${
+          className={`flex min-h-11 items-center gap-3 rounded-md px-1 text-base lowercase transition ${
             selectedUserId === null ? "text-foreground" : "text-muted hover:text-foreground"
           }`}
         >
           <span
-            className={`flex h-7 w-7 items-center justify-center rounded-full border bg-background ${
-              selectedUserId === null ? "border-accent" : "border-line"
-            }`}
+            className="flex h-9 w-9 items-center justify-center rounded-full border-2 bg-background transition"
+            style={{ borderColor: selectedUserId === null ? "var(--accent)" : "var(--line)" }}
           >
             <Logo className="h-4 w-4" />
           </span>
@@ -93,17 +92,16 @@ function BandRoster({
             key={member.id}
             type="button"
             onClick={() => onSelectUser(member.id)}
-            className={`flex min-h-9 items-center gap-3 rounded-md px-1 text-sm lowercase transition ${
+            className={`flex min-h-11 items-center gap-3 rounded-md px-1 text-base lowercase transition ${
               selectedUserId === member.id ? "text-foreground" : "text-muted hover:text-foreground"
             }`}
           >
             <span
-              className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold"
+              className="flex h-9 w-9 items-center justify-center rounded-full border-2 text-sm font-bold transition"
               style={{
                 background: AVATAR_COLORS[i % AVATAR_COLORS.length],
                 color: "var(--accent-foreground)",
-                outline: selectedUserId === member.id ? "2px solid var(--accent)" : "none",
-                outlineOffset: "2px",
+                borderColor: selectedUserId === member.id ? "var(--accent)" : "transparent",
               }}
             >
               {member.name.charAt(0).toUpperCase()}
@@ -113,8 +111,8 @@ function BandRoster({
         ))}
 
         {Array.from({ length: blanks }).map((_, i) => (
-          <div key={i} className="flex min-h-9 items-center gap-3 px-1 text-sm text-muted-2">
-            <span className="h-7 w-7 rounded-full border border-dashed border-line-dashed" />
+          <div key={i} className="flex min-h-11 items-center gap-3 px-1 text-base text-muted-2">
+            <span className="h-9 w-9 rounded-full border-2 border-dashed border-line-dashed" />
             —
           </div>
         ))}
