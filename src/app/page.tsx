@@ -29,7 +29,7 @@ function Feed({ selectedUserId }: { selectedUserId: string | null }) {
   const [reloadKey, setReloadKey] = useState(0);
   const [query, setQuery] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "shelf">("list");
-  const [pendingScrollId, setPendingScrollId] = useState<string | null>(null);
+  const [selectedShelfThreadId, setSelectedShelfThreadId] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -45,15 +45,6 @@ function Feed({ selectedUserId }: { selectedUserId: string | null }) {
 
     load();
   }, [reloadKey]);
-
-  useEffect(() => {
-    if (viewMode !== "list" || !pendingScrollId) return;
-    const id = pendingScrollId;
-    requestAnimationFrame(() => {
-      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-      setPendingScrollId(null);
-    });
-  }, [viewMode, pendingScrollId]);
 
   if (threads === null) {
     return <p className="text-muted">Loading…</p>;
@@ -85,6 +76,11 @@ function Feed({ selectedUserId }: { selectedUserId: string | null }) {
   if (trimmedQuery) {
     visibleThreads = visibleThreads.filter((thread) => threadMatchesQuery(thread, trimmedQuery));
   }
+
+  const activeShelfThread =
+    viewMode === "shelf" && selectedShelfThreadId
+      ? (visibleThreads.find((thread) => thread.id === selectedShelfThreadId) ?? null)
+      : null;
 
   return (
     <div>
@@ -122,16 +118,36 @@ function Feed({ selectedUserId }: { selectedUserId: string | null }) {
         <p className="text-muted">
           {trimmedQuery ? `No matches for "${query.trim()}".` : "Nothing to show with the current filters."}
         </p>
+      ) : viewMode === "shelf" && selectedShelfThreadId ? (
+        <div>
+          <button
+            type="button"
+            onClick={() => setSelectedShelfThreadId(null)}
+            className="mb-4 text-sm font-medium text-accent hover:underline"
+          >
+            ← back to shelf
+          </button>
+          {activeShelfThread ? (
+            <PostCard
+              post={activeShelfThread}
+              currentUserId={currentUserId}
+              onDeleted={() => {
+                setSelectedShelfThreadId(null);
+                setReloadKey((k) => k + 1);
+              }}
+              forceExpanded
+            />
+          ) : (
+            <p className="text-muted">This song is no longer available.</p>
+          )}
+        </div>
       ) : viewMode === "shelf" ? (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           {visibleThreads.map((thread) => (
             <button
               key={thread.id}
               type="button"
-              onClick={() => {
-                setViewMode("list");
-                setPendingScrollId(thread.id);
-              }}
+              onClick={() => setSelectedShelfThreadId(thread.id)}
               className="flex flex-col gap-2 text-left"
             >
               <div className="relative aspect-square overflow-hidden rounded-md border border-line">
