@@ -54,14 +54,23 @@ free tier), but the shell without a session shows no band data.
 
 ## 2. Create the 5 accounts
 
-No public signup — accounts are created manually, no password required.
+No public signup — accounts are created manually.
 
 1. In the Supabase dashboard: **Authentication → Users → Add user**.
-2. For each of the 5 band members, add their email, add `{"name": "Their Name"}`
-   under **User Metadata**, and tick **Auto Confirm User** (no password
-   needed — they'll only ever sign in with an emailed link).
+2. For each band member, enter their email and tick **Auto confirm user**.
+   The dashboard requires a password here even though it's never used —
+   sign-in is magic-link only, so any throwaway value works.
 3. The `on_auth_user_created` trigger from the migration automatically creates
-   a matching row in `profiles`.
+   a matching row in `profiles`, defaulting `name` to whatever's before the
+   `@` in their email. This dashboard's "Add user" form has no field for
+   setting a nicer display name up front, so once all 5 exist, set proper
+   names in the SQL Editor:
+
+   ```sql
+   update public.profiles set name = 'Alice' where email = 'alice@example.com';
+   update public.profiles set name = 'Bob' where email = 'bob@example.com';
+   -- ...repeat for each band member
+   ```
 
 ## 3. Configure environment variables
 
