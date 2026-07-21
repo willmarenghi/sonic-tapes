@@ -4,14 +4,28 @@ A private site for a 5-person band to share song ideas, versions, and feedback.
 Members post audio + notes; anyone can reply with their own audio building on
 an idea. Posts are never edited — every contribution is a new, permanent post.
 
-Built with Next.js (App Router) and Supabase (Postgres, Auth, Storage).
+A static Next.js site (`output: "export"`) hosted on GitHub Pages, backed by
+Supabase (Postgres, Auth, Storage). There is no server: the browser talks to
+Supabase directly, and Supabase's Row Level Security is what actually gates
+who can read or write what — not the web server, since there isn't one.
 
-## Stack
+## How auth works
 
-- **Frontend/backend:** Next.js, single project, API routes not needed —
-  uploads go straight from the browser to Supabase Storage under RLS.
-- **Database + Auth + Storage:** Supabase.
-- **Hosting:** Vercel, connected to this GitHub repo for push-to-deploy.
+Sign-in is email + one-time code, no passwords:
+
+1. Enter your email → Supabase emails a 6-digit code.
+2. Enter the code → Supabase issues a session, stored in the browser.
+
+No public signup — only the 5 accounts created ahead of time (see below) can
+request a code; everyone else's request is rejected.
+
+Because this is a static site, "you must be logged in to see `/`" is enforced
+client-side (a redirect to `/login` if there's no session) rather than by a
+server. That redirect is a UX nicety, not the security boundary — the actual
+boundary is Supabase RLS: without a valid session, every database query and
+storage read comes back empty no matter what page loads. GitHub Pages serves
+the page shell publicly (Pages doesn't support private static sites on the
+free tier), but the shell without a session shows no band data.
 
 ## 1. Create a Supabase project
 
@@ -25,14 +39,26 @@ Built with Next.js (App Router) and Supabase (Postgres, Auth, Storage).
      policies, so posts are immutable once created)
    - `audio` and `cover-art` storage buckets, plus policies so any signed-in
      band member can upload/read files
+3. **Authentication → Providers → Email**: leave Email enabled. Under
+   **Auth Settings**, turn **off** "Allow new users to sign up" — combined
+   with `shouldCreateUser: false` in the login code, this guarantees only the
+   5 pre-created accounts can ever sign in.
+4. **Authentication → Email Templates → Magic Link**: by default this
+   template sends a clickable link. Replace the body so it sends the bare
+   code instead, e.g.:
+
+   ```
+   Your Sonic Tapes sign-in code is: {{ .Token }}
+   ```
 
 ## 2. Create the 5 accounts
 
-No public signup — accounts are created manually.
+No public signup — accounts are created manually, no password required.
 
 1. In the Supabase dashboard: **Authentication → Users → Add user**.
-2. For each of the 5 band members, set their email and a password (or send a
-   magic link), and add `{"name": "Their Name"}` under **User Metadata**.
+2. For each of the 5 band members, add their email, add `{"name": "Their Name"}`
+   under **User Metadata**, and tick **Auto Confirm User** (no password
+   needed — they'll only ever sign in with an emailed code).
 3. The `on_auth_user_created` trigger from the migration automatically creates
    a matching row in `profiles`.
 
@@ -50,6 +76,9 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ```
 
+These are public values (safe to ship in a static bundle) — RLS is what
+actually protects data, not keeping these secret.
+
 ## 4. Run locally
 
 ```bash
@@ -60,21 +89,43 @@ npm run dev
 Open [http://localhost:3000](http://localhost:3000) — you'll be redirected to
 `/login`.
 
-## 5. Deploy
+To check the actual static export locally (what GitHub Pages will serve):
 
-Push this repo to GitHub (already done if you're reading this from the repo)
-and import it into [Vercel](https://vercel.com/new). Add the same two
-`NEXT_PUBLIC_SUPABASE_*` environment variables in the Vercel project settings.
-Every push to the connected branch redeploys automatically.
+```bash
+npm run build        # writes ./out
+npx serve out         # or any static file server
+```
+
+Note the production build uses `basePath: "/sonic-tapes"`, so local links only
+resolve correctly if served from a path ending in `/sonic-tapes/` (matching
+the GitHub Pages project-site URL) — plain `npx serve out` at the root won't
+match paths 1:1, but is enough to sanity-check the build.
+
+## 5. Deploy to GitHub Pages
+
+This repo includes `.github/workflows/deploy-pages.yml`, which builds the
+static export and publishes it via GitHub's official Pages actions.
+
+1. **Settings → Secrets and variables → Actions**: add repository secrets
+   `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (same values
+   as `.env.local`). These get baked into the static bundle at build time.
+2. **Settings → Pages**: set **Source** to **GitHub Actions**.
+3. Push to `main` (or run the workflow manually from the Actions tab) — it
+   builds and deploys to `https://<your-github-username>.github.io/sonic-tapes/`.
+
+If you rename the repo or serve from a custom domain, update `basePath` in
+`next.config.ts` to match (or remove it entirely for a custom domain served
+from the root).
 
 ## How it works
 
-- **Auth**: email + password via Supabase Auth. `src/proxy.ts` (Next's
-  middleware convention) refreshes the session on every request and redirects
-  signed-out visitors to `/login`.
-- **Feed** (`/`): fetches all posts and profiles, builds a reply tree
-  (`src/lib/threads.ts`) keyed on `parent_post_id`, and renders root threads
-  newest-first with replies nested underneath in chronological order.
+- **Auth**: email + one-time code via Supabase Auth (`signInWithOtp` /
+  `verifyOtp`), entirely client-side — see "How auth works" above.
+- **Route guarding**: `src/components/RequireAuth.tsx` checks for a session
+  on mount and redirects to `/login` if there isn't one.
+- **Feed** (`/`): fetches all posts and profiles client-side, builds a reply
+  tree (`src/lib/threads.ts`) keyed on `parent_post_id`, and renders root
+  threads newest-first with replies nested underneath in chronological order.
 - **Posting** (`/upload`): uploads the audio file (and optional cover art)
   directly to Supabase Storage from the browser, then inserts a `posts` row.
   Leaving "replying to" blank starts a new song idea; picking an existing post

@@ -20,8 +20,9 @@ create policy "profiles are readable by authenticated users"
   using (true);
 
 -- Auto-create a profile row whenever a user is added in Supabase Auth.
--- Seed the 5 accounts via the Supabase dashboard (Authentication > Users > Add user)
--- with user_metadata: { "name": "Full Name" } and this trigger fills in `profiles`.
+-- Seed the 5 accounts via the Supabase dashboard (Authentication > Users > Add user).
+-- No password is needed since sign-in is email-code (OTP) only — set
+-- user_metadata: { "name": "Full Name" } and this trigger fills in `profiles`.
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql

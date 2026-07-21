@@ -1,37 +1,58 @@
-import { createClient } from "@/lib/supabase/server";
+"use client";
+
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { buildThreads } from "@/lib/threads";
+import { RequireAuth } from "@/components/RequireAuth";
 import { NavBar } from "@/components/NavBar";
 import { PostCard } from "@/components/PostCard";
-import type { Post, Profile } from "@/lib/types";
+import type { Post, PostWithReplies, Profile } from "@/lib/types";
 
-export default async function FeedPage() {
-  const supabase = await createClient();
+function Feed() {
+  const [threads, setThreads] = useState<PostWithReplies[] | null>(null);
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  useEffect(() => {
+    const supabase = createClient();
 
-  const [{ data: profiles }, { data: posts }, { data: me }] = await Promise.all([
-    supabase.from("profiles").select("id, name, email"),
-    supabase.from("posts").select("*").order("created_at", { ascending: false }),
-    supabase.from("profiles").select("name").eq("id", user?.id ?? "").single(),
-  ]);
+    async function load() {
+      const [{ data: profiles }, { data: posts }] = await Promise.all([
+        supabase.from("profiles").select("id, name, email"),
+        supabase.from("posts").select("*").order("created_at", { ascending: false }),
+      ]);
+      setThreads(buildThreads((posts as Post[]) ?? [], (profiles as Profile[]) ?? []));
+    }
 
-  const threads = buildThreads((posts as Post[]) ?? [], (profiles as Profile[]) ?? []);
+    load();
+  }, []);
+
+  if (threads === null) {
+    return <p className="text-center text-neutral-500">Loading…</p>;
+  }
+
+  if (threads.length === 0) {
+    return (
+      <p className="text-center text-neutral-500">
+        No song ideas yet. Be the first to post one.
+      </p>
+    );
+  }
 
   return (
     <>
-      <NavBar userName={me?.name ?? user?.email ?? ""} />
-      <main className="mx-auto w-full max-w-2xl flex-1 space-y-6 px-4 py-6">
-        {threads.length === 0 && (
-          <p className="text-center text-neutral-500">
-            No song ideas yet. Be the first to post one.
-          </p>
-        )}
-        {threads.map((thread) => (
-          <PostCard key={thread.id} post={thread} />
-        ))}
-      </main>
+      {threads.map((thread) => (
+        <PostCard key={thread.id} post={thread} />
+      ))}
     </>
+  );
+}
+
+export default function FeedPage() {
+  return (
+    <RequireAuth>
+      <NavBar />
+      <main className="mx-auto w-full max-w-2xl flex-1 space-y-6 px-4 py-6">
+        <Feed />
+      </main>
+    </RequireAuth>
   );
 }

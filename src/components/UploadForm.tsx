@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Post } from "@/lib/types";
@@ -13,14 +13,9 @@ function storagePath(userId: string, file: File) {
   return `${userId}/${random}${ext ? `.${ext}` : ""}`;
 }
 
-export function UploadForm({
-  posts,
-  defaultReplyTo,
-}: {
-  posts: PostOption[];
-  defaultReplyTo?: string;
-}) {
+export function UploadForm({ defaultReplyTo }: { defaultReplyTo?: string }) {
   const router = useRouter();
+  const [posts, setPosts] = useState<PostOption[]>([]);
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
   const [replyTo, setReplyTo] = useState(defaultReplyTo ?? "");
@@ -28,6 +23,15 @@ export function UploadForm({
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from("posts")
+      .select("id, title, created_at")
+      .order("created_at", { ascending: false })
+      .then(({ data }) => setPosts((data as PostOption[]) ?? []));
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
