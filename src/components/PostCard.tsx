@@ -23,6 +23,7 @@ export function PostCard({
   post,
   depth = 0,
   currentUserId = null,
+  isAdmin = false,
   onDeleted,
   forceExpanded = false,
   anchorId,
@@ -30,6 +31,7 @@ export function PostCard({
   post: PostWithReplies;
   depth?: number;
   currentUserId?: string | null;
+  isAdmin?: boolean;
   onDeleted?: () => void;
   forceExpanded?: boolean;
   anchorId?: string;
@@ -41,6 +43,7 @@ export function PostCard({
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const replyCount = post.replies.length;
   const isOwner = currentUserId === post.uploader_id;
+  const canDelete = isOwner || isAdmin;
   const expanded = manualExpanded ?? forceExpanded;
 
   async function handleDelete() {
@@ -91,22 +94,22 @@ export function PostCard({
               Reply
             </Link>
             {isOwner && (
-              <>
-                <Link
-                  href={`/upload?edit=${post.id}`}
-                  className="flex min-h-9 items-center rounded-md border border-line px-2.5 text-xs text-muted hover:border-accent hover:text-foreground"
-                >
-                  Edit
-                </Link>
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  disabled={deleting}
-                  className="flex min-h-9 items-center rounded-md border border-line px-2.5 text-xs text-red-400 hover:border-red-400 disabled:opacity-60"
-                >
-                  {deleting ? "Deleting…" : "Delete"}
-                </button>
-              </>
+              <Link
+                href={`/upload?edit=${post.id}`}
+                className="flex min-h-9 items-center rounded-md border border-line px-2.5 text-xs text-muted hover:border-accent hover:text-foreground"
+              >
+                Edit
+              </Link>
+            )}
+            {canDelete && (
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex min-h-9 items-center rounded-md border border-line px-2.5 text-xs text-red-400 hover:border-red-400 disabled:opacity-60"
+              >
+                {deleting ? "Deleting…" : "Delete"}
+              </button>
             )}
           </div>
         </div>
@@ -146,6 +149,7 @@ export function PostCard({
               post={reply}
               depth={depth + 1}
               currentUserId={currentUserId}
+              isAdmin={isAdmin}
               onDeleted={onDeleted}
               forceExpanded={forceExpanded}
             />

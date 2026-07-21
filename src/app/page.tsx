@@ -26,6 +26,7 @@ function RingIcon({ className }: { className?: string }) {
 function Feed({ selectedUserId }: { selectedUserId: string | null }) {
   const [threads, setThreads] = useState<PostWithReplies[] | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [query, setQuery] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "shelf">("list");
@@ -33,13 +34,21 @@ function Feed({ selectedUserId }: { selectedUserId: string | null }) {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => setCurrentUserId(user?.id ?? null));
 
     async function load() {
-      const [{ data: profiles }, { data: posts }] = await Promise.all([
-        supabase.from("profiles").select("id, name, email"),
+      const [
+        {
+          data: { user },
+        },
+        { data: profiles },
+        { data: posts },
+      ] = await Promise.all([
+        supabase.auth.getUser(),
+        supabase.from("profiles").select("id, name, email, is_admin"),
         supabase.from("posts").select("*").order("created_at", { ascending: false }),
       ]);
+      setCurrentUserId(user?.id ?? null);
+      setIsAdmin(!!(profiles as Profile[] | null)?.find((p) => p.id === user?.id)?.is_admin);
       setThreads(buildThreads((posts as Post[]) ?? [], (profiles as Profile[]) ?? []));
     }
 
@@ -140,6 +149,7 @@ function Feed({ selectedUserId }: { selectedUserId: string | null }) {
             <PostCard
               post={activeShelfThread}
               currentUserId={currentUserId}
+              isAdmin={isAdmin}
               onDeleted={() => {
                 setSelectedShelfThreadId(null);
                 setReloadKey((k) => k + 1);
@@ -191,6 +201,7 @@ function Feed({ selectedUserId }: { selectedUserId: string | null }) {
               key={thread.id}
               post={thread}
               currentUserId={currentUserId}
+              isAdmin={isAdmin}
               onDeleted={() => setReloadKey((k) => k + 1)}
               forceExpanded={!!trimmedQuery}
               anchorId={thread.id}

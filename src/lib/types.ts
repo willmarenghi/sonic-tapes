@@ -2,6 +2,7 @@ export type Profile = {
   id: string;
   name: string;
   email: string;
+  is_admin: boolean;
 };
 
 export type Post = {
