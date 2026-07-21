@@ -16,6 +16,14 @@ const robotoSlab = Roboto_Slab({
 export const metadata: Metadata = {
   title: "Sonic Tapes",
   description: "Song ideas, versions, and feedback for the band.",
+  appleWebApp: {
+    capable: true,
+    title: "Sonic Tapes",
+    statusBarStyle: "black-translucent",
+  },
+  other: {
+    "apple-mobile-web-app-capable": "yes",
+  },
 };
 
 export const viewport: Viewport = {
