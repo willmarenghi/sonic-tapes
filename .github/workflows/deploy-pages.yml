@@ -29,6 +29,22 @@ jobs:
 
       - run: npm ci
 
+      - name: Verify Supabase secrets are configured
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$NEXT_PUBLIC_SUPABASE_URL" ]; then
+            echo "::error::Repository secret NEXT_PUBLIC_SUPABASE_URL is missing or empty. Set it under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          if [ -z "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ]; then
+            echo "::error::Repository secret NEXT_PUBLIC_SUPABASE_ANON_KEY is missing or empty. Set it under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          echo "NEXT_PUBLIC_SUPABASE_URL is set (${#NEXT_PUBLIC_SUPABASE_URL} chars): $NEXT_PUBLIC_SUPABASE_URL"
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY is set (${#NEXT_PUBLIC_SUPABASE_ANON_KEY} chars)"
+
       - run: npm run build
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
