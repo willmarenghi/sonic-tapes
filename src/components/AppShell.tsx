@@ -284,7 +284,7 @@ export function AppShell({
         />
       </aside>
 
-      <aside className="hidden w-72 shrink-0 flex-col overflow-y-auto border-r border-line bg-surface px-6 py-8 md:flex">
+      <aside className="hidden w-72 shrink-0 flex-col overflow-y-auto border-r border-line bg-surface px-6 py-8 md:flex md:sticky md:top-0 md:h-screen">
         <SidebarContent
           label={label}
           selectedUserId={selectedUserId}
