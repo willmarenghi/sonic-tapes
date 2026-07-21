@@ -10,8 +10,6 @@ import { AppShell } from "@/components/AppShell";
 import { PostCard } from "@/components/PostCard";
 import type { Post, PostWithReplies, Profile } from "@/lib/types";
 
-type Reaction = { post_id: string; user_id: string };
-
 function RingIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden>
@@ -28,25 +26,21 @@ function RingIcon({ className }: { className?: string }) {
 function Feed({ selectedUserId }: { selectedUserId: string | null }) {
   const [threads, setThreads] = useState<PostWithReplies[] | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [reactions, setReactions] = useState<Reaction[]>([]);
   const [reloadKey, setReloadKey] = useState(0);
   const [query, setQuery] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "shelf">("list");
   const [pendingScrollId, setPendingScrollId] = useState<string | null>(null);
-  const [reactionError, setReactionError] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => setCurrentUserId(user?.id ?? null));
 
     async function load() {
-      const [{ data: profiles }, { data: posts }, { data: reactionRows }] = await Promise.all([
+      const [{ data: profiles }, { data: posts }] = await Promise.all([
         supabase.from("profiles").select("id, name, email"),
         supabase.from("posts").select("*").order("created_at", { ascending: false }),
-        supabase.from("reactions").select("post_id, user_id"),
       ]);
       setThreads(buildThreads((posts as Post[]) ?? [], (profiles as Profile[]) ?? []));
-      setReactions((reactionRows as Reaction[]) ?? []);
     }
 
     load();
@@ -60,49 +54,6 @@ function Feed({ selectedUserId }: { selectedUserId: string | null }) {
       setPendingScrollId(null);
     });
   }, [viewMode, pendingScrollId]);
-
-  async function handleToggleReaction(postId: string) {
-    if (!currentUserId) return;
-    setReactionError(null);
-    const supabase = createClient();
-    const alreadyReacted = reactions.some(
-      (r) => r.post_id === postId && r.user_id === currentUserId
-    );
-    if (alreadyReacted) {
-      const { data, error } = await supabase
-        .from("reactions")
-        .delete()
-        .eq("post_id", postId)
-        .eq("user_id", currentUserId)
-        .select();
-      if (error) {
-        setReactionError(error.message);
-        return;
-      }
-      if (!data || data.length === 0) {
-        setReactionError(
-          "Nothing was removed — make sure the latest Supabase migration has been run."
-        );
-        return;
-      }
-    } else {
-      const { data, error } = await supabase
-        .from("reactions")
-        .insert({ post_id: postId, user_id: currentUserId })
-        .select();
-      if (error) {
-        setReactionError(error.message);
-        return;
-      }
-      if (!data || data.length === 0) {
-        setReactionError(
-          "Nothing was saved — make sure the latest Supabase migration has been run."
-        );
-        return;
-      }
-    }
-    setReloadKey((k) => k + 1);
-  }
 
   if (threads === null) {
     return <p className="text-muted">Loading…</p>;
@@ -126,13 +77,6 @@ function Feed({ selectedUserId }: { selectedUserId: string | null }) {
     );
   }
 
-  const reactionCounts = new Map<string, number>();
-  const myReactions = new Set<string>();
-  for (const r of reactions) {
-    reactionCounts.set(r.post_id, (reactionCounts.get(r.post_id) ?? 0) + 1);
-    if (r.user_id === currentUserId) myReactions.add(r.post_id);
-  }
-
   const trimmedQuery = query.trim().toLowerCase();
   let visibleThreads = threads;
   if (selectedUserId) {
@@ -144,9 +88,6 @@ function Feed({ selectedUserId }: { selectedUserId: string | null }) {
 
   return (
     <div>
-      {reactionError && (
-        <p className="mb-3 text-xs text-red-400">{reactionError}</p>
-      )}
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <input
           type="search"
@@ -227,9 +168,6 @@ function Feed({ selectedUserId }: { selectedUserId: string | null }) {
               currentUserId={currentUserId}
               onDeleted={() => setReloadKey((k) => k + 1)}
               forceExpanded={!!trimmedQuery}
-              reactionCounts={reactionCounts}
-              myReactions={myReactions}
-              onToggleReaction={handleToggleReaction}
               anchorId={thread.id}
             />
           ))}
