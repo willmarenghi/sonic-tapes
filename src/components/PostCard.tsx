@@ -26,12 +26,20 @@ export function PostCard({
   currentUserId = null,
   onDeleted,
   forceExpanded = false,
+  reactionCounts,
+  myReactions,
+  onToggleReaction,
+  anchorId,
 }: {
   post: PostWithReplies;
   depth?: number;
   currentUserId?: string | null;
   onDeleted?: () => void;
   forceExpanded?: boolean;
+  reactionCounts?: Map<string, number>;
+  myReactions?: Set<string>;
+  onToggleReaction?: (postId: string) => void;
+  anchorId?: string;
 }) {
   // null = no manual choice yet, so a search match (forceExpanded) wins;
   // once the user explicitly toggles it, their choice takes over.
@@ -41,6 +49,8 @@ export function PostCard({
   const replyCount = post.replies.length;
   const isOwner = currentUserId === post.uploader_id;
   const expanded = manualExpanded ?? forceExpanded;
+  const fireCount = reactionCounts?.get(post.id) ?? 0;
+  const reactedByMe = myReactions?.has(post.id) ?? false;
 
   async function handleDelete() {
     const descendantCount = countDescendants(post);
@@ -71,7 +81,7 @@ export function PostCard({
   }
 
   return (
-    <div className={depth > 0 ? "border-l border-line pl-2 sm:pl-4" : ""}>
+    <div id={anchorId} className={depth > 0 ? "border-l border-line pl-2 sm:pl-4" : ""}>
       <article className="rounded-xl border-2 border-line bg-surface p-4 shadow-sm shadow-black/20">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
@@ -136,15 +146,29 @@ export function PostCard({
           </div>
         )}
 
-        {replyCount > 0 && (
+        <div className="mt-3 flex flex-wrap items-center gap-4">
           <button
             type="button"
-            onClick={() => setManualExpanded(!expanded)}
-            className="mt-3 text-sm font-medium text-accent hover:underline"
+            onClick={() => onToggleReaction?.(post.id)}
+            className={`flex min-h-8 items-center gap-1.5 rounded-full border px-2.5 text-xs transition ${
+              reactedByMe
+                ? "border-accent bg-accent/10 text-foreground"
+                : "border-line text-muted hover:border-accent"
+            }`}
           >
-            {expanded ? "Hide replies" : `See ${replyCount} ${replyCount === 1 ? "reply" : "replies"}`}
+            🔥 {fireCount}
           </button>
-        )}
+
+          {replyCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setManualExpanded(!expanded)}
+              className="text-sm font-medium text-accent hover:underline"
+            >
+              {expanded ? "Hide replies" : `See ${replyCount} ${replyCount === 1 ? "reply" : "replies"}`}
+            </button>
+          )}
+        </div>
       </article>
 
       {expanded && replyCount > 0 && (
@@ -157,6 +181,9 @@ export function PostCard({
               currentUserId={currentUserId}
               onDeleted={onDeleted}
               forceExpanded={forceExpanded}
+              reactionCounts={reactionCounts}
+              myReactions={myReactions}
+              onToggleReaction={onToggleReaction}
             />
           ))}
         </div>

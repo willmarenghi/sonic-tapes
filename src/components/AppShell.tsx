@@ -5,9 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-function Logo() {
+const BAND_SIZE = 5;
+const AVATAR_COLORS = ["#b8a9e6", "#cdb37a", "#cfa8b0", "#a8c0a0", "#9aa6c9"];
+
+function Logo({ className = "h-7 w-7" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" className="h-7 w-7 shrink-0 text-accent" aria-hidden>
+    <svg viewBox="0 0 24 24" className={`shrink-0 text-accent ${className}`} aria-hidden>
       <circle cx="12" cy="12" r="11" fill="none" stroke="currentColor" strokeWidth="1" />
       <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1" />
       <circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" strokeWidth="1" />
@@ -37,7 +40,98 @@ function useProfileLabel() {
   return label;
 }
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+type BandMember = { id: string; name: string };
+
+function useBandMembers() {
+  const [members, setMembers] = useState<BandMember[]>([]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from("profiles")
+      .select("id, name")
+      .order("created_at", { ascending: true })
+      .then(({ data }) => setMembers((data as BandMember[]) ?? []));
+  }, []);
+
+  return members;
+}
+
+function BandRoster({
+  selectedUserId,
+  onSelectUser,
+}: {
+  selectedUserId: string | null;
+  onSelectUser: (id: string | null) => void;
+}) {
+  const members = useBandMembers();
+  const blanks = Math.max(0, BAND_SIZE - members.length);
+
+  return (
+    <div className="mt-8 border-t border-dashed border-line-dashed pt-4">
+      <p className="text-xs lowercase tracking-wide text-muted">band</p>
+      <div className="mt-3 flex flex-col gap-1">
+        <button
+          type="button"
+          onClick={() => onSelectUser(null)}
+          className={`flex min-h-9 items-center gap-3 rounded-md px-1 text-sm lowercase transition ${
+            selectedUserId === null ? "text-foreground" : "text-muted hover:text-foreground"
+          }`}
+        >
+          <span
+            className={`flex h-7 w-7 items-center justify-center rounded-full border bg-background ${
+              selectedUserId === null ? "border-accent" : "border-line"
+            }`}
+          >
+            <Logo className="h-4 w-4" />
+          </span>
+          all
+        </button>
+
+        {members.map((member, i) => (
+          <button
+            key={member.id}
+            type="button"
+            onClick={() => onSelectUser(member.id)}
+            className={`flex min-h-9 items-center gap-3 rounded-md px-1 text-sm lowercase transition ${
+              selectedUserId === member.id ? "text-foreground" : "text-muted hover:text-foreground"
+            }`}
+          >
+            <span
+              className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold"
+              style={{
+                background: AVATAR_COLORS[i % AVATAR_COLORS.length],
+                color: "var(--accent-foreground)",
+                outline: selectedUserId === member.id ? "2px solid var(--accent)" : "none",
+                outlineOffset: "2px",
+              }}
+            >
+              {member.name.charAt(0).toUpperCase()}
+            </span>
+            {member.name}
+          </button>
+        ))}
+
+        {Array.from({ length: blanks }).map((_, i) => (
+          <div key={i} className="flex min-h-9 items-center gap-3 px-1 text-sm text-muted-2">
+            <span className="h-7 w-7 rounded-full border border-dashed border-line-dashed" />
+            —
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function AppShell({
+  children,
+  selectedUserId = null,
+  onSelectUser,
+}: {
+  children: React.ReactNode;
+  selectedUserId?: string | null;
+  onSelectUser?: (id: string | null) => void;
+}) {
   const router = useRouter();
   const label = useProfileLabel();
 
@@ -87,9 +181,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           + new idea
         </Link>
 
-        <div className="mt-8 border-t border-dashed border-line-dashed pt-4">
-          <p className="text-xs lowercase tracking-wide text-muted">feed</p>
-        </div>
+        {onSelectUser && (
+          <BandRoster selectedUserId={selectedUserId} onSelectUser={onSelectUser} />
+        )}
 
         <div className="flex-1" />
 
