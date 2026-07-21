@@ -12,6 +12,7 @@ export type Post = {
   cover_art_url: string | null;
   notes: string | null;
   created_at: string;
+  updated_at: string | null;
   parent_post_id: string | null;
 };
 

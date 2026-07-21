@@ -39,7 +39,7 @@ export function PostCard({
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const replyCount = post.replies.length;
-  const canDelete = currentUserId === post.uploader_id;
+  const isOwner = currentUserId === post.uploader_id;
   const expanded = manualExpanded ?? forceExpanded;
 
   async function handleDelete() {
@@ -79,6 +79,7 @@ export function PostCard({
             <p className="text-xs text-muted">
               {post.uploader?.name ?? "Unknown"} · {formatDate(post.created_at)}
               {depth > 0 && " · reply"}
+              {post.updated_at && ` · edited ${formatDate(post.updated_at)}`}
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
@@ -88,15 +89,23 @@ export function PostCard({
             >
               Reply
             </Link>
-            {canDelete && (
-              <button
-                type="button"
-                onClick={handleDelete}
-                disabled={deleting}
-                className="flex min-h-9 items-center rounded-md border border-line px-2.5 text-xs text-red-400 hover:border-red-400 disabled:opacity-60"
-              >
-                {deleting ? "Deleting…" : "Delete"}
-              </button>
+            {isOwner && (
+              <>
+                <Link
+                  href={`/upload?edit=${post.id}`}
+                  className="flex min-h-9 items-center rounded-md border border-line px-2.5 text-xs text-muted hover:border-accent hover:text-foreground"
+                >
+                  Edit
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="flex min-h-9 items-center rounded-md border border-line px-2.5 text-xs text-red-400 hover:border-red-400 disabled:opacity-60"
+                >
+                  {deleting ? "Deleting…" : "Delete"}
+                </button>
+              </>
             )}
           </div>
         </div>

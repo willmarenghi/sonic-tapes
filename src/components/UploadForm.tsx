@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import type { Post } from "@/lib/types";
@@ -24,11 +25,19 @@ function errorMessage(err: unknown): string {
   return "Something went wrong.";
 }
 
-export function UploadForm({ defaultReplyTo }: { defaultReplyTo?: string }) {
+export function UploadForm({
+  defaultReplyTo,
+  editingPost,
+}: {
+  defaultReplyTo?: string;
+  editingPost?: Post;
+}) {
   const router = useRouter();
+  const isEditing = !!editingPost;
+
   const [posts, setPosts] = useState<PostOption[]>([]);
-  const [title, setTitle] = useState("");
-  const [notes, setNotes] = useState("");
+  const [title, setTitle] = useState(editingPost?.title ?? "");
+  const [notes, setNotes] = useState(editingPost?.notes ?? "");
   const [replyTo, setReplyTo] = useState(defaultReplyTo ?? "");
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [recorderKey, setRecorderKey] = useState(0);
@@ -37,14 +46,19 @@ export function UploadForm({ defaultReplyTo }: { defaultReplyTo?: string }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const existingAudioUrl = editingPost?.audio_url ?? null;
+  const existingCoverUrl = editingPost?.cover_art_url ?? null;
+  const effectiveParentPostId = isEditing ? editingPost.parent_post_id : replyTo || null;
+
   useEffect(() => {
+    if (isEditing) return;
     const supabase = createClient();
     supabase
       .from("posts")
       .select("id, title, created_at")
       .order("created_at", { ascending: false })
       .then(({ data }) => setPosts((data as PostOption[]) ?? []));
-  }, []);
+  }, [isEditing]);
 
   function handleRecorded(file: File | null) {
     setAudioFile(file);
@@ -58,7 +72,8 @@ export function UploadForm({ defaultReplyTo }: { defaultReplyTo?: string }) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!replyTo && !audioFile) {
+    const hasAudio = !!audioFile || !!existingAudioUrl;
+    if (!effectiveParentPostId && !hasAudio) {
       setError("An audio file is required to start a new song idea.");
       return;
     }
@@ -78,7 +93,7 @@ export function UploadForm({ defaultReplyTo }: { defaultReplyTo?: string }) {
         return;
       }
 
-      let audioUrl: string | null = null;
+      let audioUrl = existingAudioUrl;
       if (audioFile) {
         const audioPath = storagePath(user.id, audioFile);
         const { error: audioError } = await supabase.storage
@@ -88,7 +103,7 @@ export function UploadForm({ defaultReplyTo }: { defaultReplyTo?: string }) {
         audioUrl = supabase.storage.from("audio").getPublicUrl(audioPath).data.publicUrl;
       }
 
-      let coverUrl: string | null = null;
+      let coverUrl = existingCoverUrl;
       if (coverFile) {
         const coverPath = storagePath(user.id, coverFile);
         const { error: coverError } = await supabase.storage
@@ -98,15 +113,28 @@ export function UploadForm({ defaultReplyTo }: { defaultReplyTo?: string }) {
         coverUrl = supabase.storage.from("cover-art").getPublicUrl(coverPath).data.publicUrl;
       }
 
-      const { error: insertError } = await supabase.from("posts").insert({
-        title,
-        uploader_id: user.id,
-        audio_url: audioUrl,
-        cover_art_url: coverUrl,
-        notes: notes || null,
-        parent_post_id: replyTo || null,
-      });
-      if (insertError) throw insertError;
+      if (isEditing) {
+        const { error: updateError } = await supabase
+          .from("posts")
+          .update({
+            title,
+            notes: notes || null,
+            audio_url: audioUrl,
+            cover_art_url: coverUrl,
+          })
+          .eq("id", editingPost.id);
+        if (updateError) throw updateError;
+      } else {
+        const { error: insertError } = await supabase.from("posts").insert({
+          title,
+          uploader_id: user.id,
+          audio_url: audioUrl,
+          cover_art_url: coverUrl,
+          notes: notes || null,
+          parent_post_id: effectiveParentPostId,
+        });
+        if (insertError) throw insertError;
+      }
 
       router.push("/");
       router.refresh();
@@ -131,29 +159,46 @@ export function UploadForm({ defaultReplyTo }: { defaultReplyTo?: string }) {
         />
       </div>
 
-      <div>
-        <label htmlFor="replyTo" className="mb-1 block text-sm text-muted">
-          Replying to (leave blank to start a new song idea)
-        </label>
-        <select
-          id="replyTo"
-          value={replyTo}
-          onChange={(e) => setReplyTo(e.target.value)}
-          className="w-full rounded-md border border-line bg-surface px-3 py-2 text-base text-foreground outline-none focus:border-accent"
-        >
-          <option value="">— New song idea —</option>
-          {posts.map((post) => (
-            <option key={post.id} value={post.id}>
-              {post.title} ({new Date(post.created_at).toLocaleDateString()})
-            </option>
-          ))}
-        </select>
-      </div>
+      {isEditing ? (
+        <p className="text-sm text-muted">
+          {editingPost.parent_post_id
+            ? "Editing a reply — the thread it belongs to can't be changed."
+            : "Editing a song idea."}
+        </p>
+      ) : (
+        <div>
+          <label htmlFor="replyTo" className="mb-1 block text-sm text-muted">
+            Replying to (leave blank to start a new song idea)
+          </label>
+          <select
+            id="replyTo"
+            value={replyTo}
+            onChange={(e) => setReplyTo(e.target.value)}
+            className="w-full rounded-md border border-line bg-surface px-3 py-2 text-base text-foreground outline-none focus:border-accent"
+          >
+            <option value="">— New song idea —</option>
+            {posts.map((post) => (
+              <option key={post.id} value={post.id}>
+                {post.title} ({new Date(post.created_at).toLocaleDateString()})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div>
         <span className="mb-1 block text-sm text-muted">
-          Audio{replyTo && " (optional for a reply)"}
+          Audio{effectiveParentPostId && " (optional for a reply)"}
         </span>
+        {existingAudioUrl && !audioFile && (
+          <p className="mb-2 text-xs text-muted">
+            Current:{" "}
+            <a href={existingAudioUrl} target="_blank" rel="noreferrer" className="underline">
+              audio file
+            </a>{" "}
+            — record or choose a new one below to replace it.
+          </p>
+        )}
         <div className="flex flex-wrap items-center gap-3">
           <VoiceRecorder key={recorderKey} onRecorded={handleRecorded} />
           <input
@@ -171,6 +216,11 @@ export function UploadForm({ defaultReplyTo }: { defaultReplyTo?: string }) {
         <label htmlFor="cover" className="mb-1 block text-sm text-muted">
           Cover art (optional)
         </label>
+        {existingCoverUrl && !coverFile && (
+          <div className="relative mb-2 h-24 w-24 overflow-hidden rounded-md">
+            <Image src={existingCoverUrl} alt="" fill sizes="96px" className="object-cover" />
+          </div>
+        )}
         <input
           id="cover"
           type="file"
@@ -208,7 +258,7 @@ export function UploadForm({ defaultReplyTo }: { defaultReplyTo?: string }) {
           disabled={submitting}
           className="min-h-11 flex-1 rounded-md bg-accent px-3 py-2 font-medium text-accent-foreground transition hover:brightness-110 disabled:opacity-60"
         >
-          {submitting ? "Uploading…" : "Post"}
+          {submitting ? (isEditing ? "Saving…" : "Uploading…") : isEditing ? "Save changes" : "Post"}
         </button>
       </div>
     </form>
