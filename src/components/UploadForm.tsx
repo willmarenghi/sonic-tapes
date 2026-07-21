@@ -201,9 +201,9 @@ export function UploadForm({
           </p>
         )}
         <div className="flex flex-wrap items-center gap-3">
-          <VoiceRecorder key={recorderKey} onRecorded={handleRecorded} />
+          <VoiceRecorder key={`recorder-${recorderKey}`} onRecorded={handleRecorded} />
           <input
-            key={fileInputKey}
+            key={`file-${fileInputKey}`}
             id="audio"
             type="file"
             accept="audio/*"
