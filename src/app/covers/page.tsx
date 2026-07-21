@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
@@ -178,6 +179,13 @@ function CoversPageContent() {
 
   return (
     <div>
+      <Link
+        href="/"
+        className="mb-4 inline-block text-sm font-medium text-accent hover:underline"
+      >
+        ← back to song ideas
+      </Link>
+
       <h1 className="mb-1 font-display text-2xl lowercase text-foreground">cover songs</h1>
       <p className="mb-6 text-sm text-muted">
         songs the band wants to learn, and how far along we are on each one.
