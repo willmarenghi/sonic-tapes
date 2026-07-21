@@ -14,6 +14,16 @@ function storagePath(userId: string, file: File) {
   return `${userId}/${random}${ext ? `.${ext}` : ""}`;
 }
 
+// Supabase's Postgrest/Storage errors are plain objects with a `message`
+// field, not real Error instances, so `instanceof Error` misses them.
+function errorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (err && typeof err === "object" && "message" in err && typeof err.message === "string") {
+    return err.message;
+  }
+  return "Something went wrong.";
+}
+
 export function UploadForm({ defaultReplyTo }: { defaultReplyTo?: string }) {
   const router = useRouter();
   const [posts, setPosts] = useState<PostOption[]>([]);
@@ -101,7 +111,7 @@ export function UploadForm({ defaultReplyTo }: { defaultReplyTo?: string }) {
       router.push("/");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      setError(errorMessage(err));
       setSubmitting(false);
     }
   }

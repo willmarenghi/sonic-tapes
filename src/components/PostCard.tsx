@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 import type { PostWithReplies } from "@/lib/types";
 import { AudioPlayer } from "@/components/AudioPlayer";
 import { Notes } from "@/components/Notes";
@@ -15,9 +16,38 @@ function formatDate(iso: string) {
   });
 }
 
-export function PostCard({ post, depth = 0 }: { post: PostWithReplies; depth?: number }) {
+export function PostCard({
+  post,
+  depth = 0,
+  currentUserId = null,
+  onDeleted,
+}: {
+  post: PostWithReplies;
+  depth?: number;
+  currentUserId?: string | null;
+  onDeleted?: () => void;
+}) {
   const [expanded, setExpanded] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const replyCount = post.replies.length;
+  const canDelete = currentUserId === post.uploader_id && replyCount === 0;
+
+  async function handleDelete() {
+    if (!window.confirm("Delete this post? This can't be undone.")) return;
+
+    setDeleting(true);
+    setDeleteError(null);
+    const supabase = createClient();
+    const { error } = await supabase.from("posts").delete().eq("id", post.id);
+
+    if (error) {
+      setDeleteError(error.message);
+      setDeleting(false);
+      return;
+    }
+    onDeleted?.();
+  }
 
   return (
     <div className={depth > 0 ? "border-l border-line pl-2 sm:pl-4" : ""}>
@@ -30,13 +60,27 @@ export function PostCard({ post, depth = 0 }: { post: PostWithReplies; depth?: n
               {depth > 0 && " · reply"}
             </p>
           </div>
-          <Link
-            href={`/upload?replyTo=${post.id}`}
-            className="flex min-h-9 shrink-0 items-center rounded-md border border-line px-2.5 text-xs text-muted hover:border-accent hover:text-foreground"
-          >
-            Reply
-          </Link>
+          <div className="flex shrink-0 items-center gap-2">
+            <Link
+              href={`/upload?replyTo=${post.id}`}
+              className="flex min-h-9 items-center rounded-md border border-line px-2.5 text-xs text-muted hover:border-accent hover:text-foreground"
+            >
+              Reply
+            </Link>
+            {canDelete && (
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex min-h-9 items-center rounded-md border border-line px-2.5 text-xs text-red-400 hover:border-red-400 disabled:opacity-60"
+              >
+                {deleting ? "Deleting…" : "Delete"}
+              </button>
+            )}
+          </div>
         </div>
+
+        {deleteError && <p className="mt-2 text-xs text-red-400">{deleteError}</p>}
 
         {post.cover_art_url && (
           <div className="relative mt-3 h-40 w-40 overflow-hidden rounded-md">
@@ -76,7 +120,13 @@ export function PostCard({ post, depth = 0 }: { post: PostWithReplies; depth?: n
       {expanded && replyCount > 0 && (
         <div className="mt-3 space-y-3 pl-2 sm:pl-4">
           {post.replies.map((reply) => (
-            <PostCard key={reply.id} post={reply} depth={depth + 1} />
+            <PostCard
+              key={reply.id}
+              post={reply}
+              depth={depth + 1}
+              currentUserId={currentUserId}
+              onDeleted={onDeleted}
+            />
           ))}
         </div>
       )}

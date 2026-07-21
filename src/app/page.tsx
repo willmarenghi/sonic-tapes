@@ -11,9 +11,12 @@ import type { Post, PostWithReplies, Profile } from "@/lib/types";
 
 function Feed() {
   const [threads, setThreads] = useState<PostWithReplies[] | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => setCurrentUserId(user?.id ?? null));
 
     async function load() {
       const [{ data: profiles }, { data: posts }] = await Promise.all([
@@ -24,7 +27,7 @@ function Feed() {
     }
 
     load();
-  }, []);
+  }, [reloadKey]);
 
   if (threads === null) {
     return <p className="text-muted">Loading…</p>;
@@ -51,7 +54,12 @@ function Feed() {
   return (
     <div className="space-y-4">
       {threads.map((thread) => (
-        <PostCard key={thread.id} post={thread} />
+        <PostCard
+          key={thread.id}
+          post={thread}
+          currentUserId={currentUserId}
+          onDeleted={() => setReloadKey((k) => k + 1)}
+        />
       ))}
     </div>
   );
