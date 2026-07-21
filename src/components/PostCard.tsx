@@ -16,6 +16,10 @@ function formatDate(iso: string) {
   });
 }
 
+function countDescendants(post: PostWithReplies): number {
+  return post.replies.reduce((sum, reply) => sum + 1 + countDescendants(reply), 0);
+}
+
 export function PostCard({
   post,
   depth = 0,
@@ -31,18 +35,30 @@ export function PostCard({
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const replyCount = post.replies.length;
-  const canDelete = currentUserId === post.uploader_id && replyCount === 0;
+  const canDelete = currentUserId === post.uploader_id;
 
   async function handleDelete() {
-    if (!window.confirm("Delete this post? This can't be undone.")) return;
+    const descendantCount = countDescendants(post);
+    const confirmMessage =
+      descendantCount > 0
+        ? `Delete this post and its ${descendantCount} ${descendantCount === 1 ? "reply" : "replies"}? This can't be undone.`
+        : "Delete this post? This can't be undone.";
+    if (!window.confirm(confirmMessage)) return;
 
     setDeleting(true);
     setDeleteError(null);
     const supabase = createClient();
-    const { error } = await supabase.from("posts").delete().eq("id", post.id);
+    const { data, error } = await supabase.from("posts").delete().eq("id", post.id).select();
 
     if (error) {
       setDeleteError(error.message);
+      setDeleting(false);
+      return;
+    }
+    if (!data || data.length === 0) {
+      setDeleteError(
+        "Nothing was deleted — make sure the latest Supabase migration has been run."
+      );
       setDeleting(false);
       return;
     }
