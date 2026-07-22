@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { MAX_RECORDING_MS } from "@/lib/audioLimits";
 
 const MIME_CANDIDATES = [
   "audio/mp4", // Safari/iOS
@@ -34,9 +35,9 @@ export function VoiceRecorder({
 }: {
   onRecorded: (file: File | null) => void;
 }) {
-  const [status, setStatus] = useState<"idle" | "recording" | "recorded" | "unsupported">(
-    typeof window !== "undefined" && typeof MediaRecorder !== "undefined" ? "idle" : "unsupported"
-  );
+  const [status, setStatus] = useState<
+    "idle" | "recording" | "stopping" | "recorded" | "unsupported"
+  >(typeof window !== "undefined" && typeof MediaRecorder !== "undefined" ? "idle" : "unsupported");
   const [elapsedMs, setElapsedMs] = useState(0);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -79,6 +80,16 @@ export function VoiceRecorder({
         onRecorded(file);
         streamRef.current?.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
+        setStatus("recorded");
+      };
+
+      recorder.onerror = () => {
+        if (timerRef.current) clearInterval(timerRef.current);
+        streamRef.current?.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+        setError("Recording failed unexpectedly. Please try again.");
+        setStatus("idle");
+        setElapsedMs(0);
       };
 
       recorderRef.current = recorder;
@@ -86,7 +97,12 @@ export function VoiceRecorder({
       startedAtRef.current = Date.now();
       setElapsedMs(0);
       timerRef.current = setInterval(() => {
-        setElapsedMs(Date.now() - startedAtRef.current);
+        const elapsed = Date.now() - startedAtRef.current;
+        setElapsedMs(elapsed);
+        if (elapsed >= MAX_RECORDING_MS) {
+          setError(`Stopped automatically at the ${formatElapsed(MAX_RECORDING_MS)} limit.`);
+          stopRecording();
+        }
       }, 250);
       setStatus("recording");
     } catch {
@@ -95,9 +111,9 @@ export function VoiceRecorder({
   }
 
   function stopRecording() {
-    recorderRef.current?.stop();
     if (timerRef.current) clearInterval(timerRef.current);
-    setStatus("recorded");
+    setStatus("stopping");
+    recorderRef.current?.stop();
   }
 
   function discardRecording() {
@@ -127,6 +143,7 @@ export function VoiceRecorder({
         >
           Discard &amp; re-record
         </button>
+        {error && <p className="text-sm text-muted">{error}</p>}
       </div>
     );
   }
@@ -141,6 +158,15 @@ export function VoiceRecorder({
         >
           <span className="h-3 w-3 rounded-sm bg-white" />
           Stop ({formatElapsed(elapsedMs)})
+        </button>
+      ) : status === "stopping" ? (
+        <button
+          type="button"
+          disabled
+          className="flex min-h-11 items-center gap-2 rounded-md bg-red-600/60 px-4 py-2 text-sm font-medium text-white"
+        >
+          <span className="h-3 w-3 rounded-sm bg-white" />
+          Stopping…
         </button>
       ) : (
         <button

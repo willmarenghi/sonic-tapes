@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
+import { MAX_UPLOAD_BYTES, formatBytes } from "@/lib/audioLimits";
 import type { Post } from "@/lib/types";
 
 type PostOption = Pick<Post, "id" | "title" | "created_at">;
@@ -62,11 +63,27 @@ export function UploadForm({
   }, [isEditing]);
 
   function handleRecorded(file: File | null) {
+    if (file && file.size > MAX_UPLOAD_BYTES) {
+      setError(
+        `That recording is ${formatBytes(file.size)}, which is over the ${formatBytes(MAX_UPLOAD_BYTES)} upload limit.`
+      );
+      setRecorderKey((k) => k + 1);
+      return;
+    }
+    setError(null);
     setAudioFile(file);
     if (file) setFileInputKey((k) => k + 1);
   }
 
   function handleFilePicked(file: File | null) {
+    if (file && file.size > MAX_UPLOAD_BYTES) {
+      setError(
+        `That file is ${formatBytes(file.size)}, which is over the ${formatBytes(MAX_UPLOAD_BYTES)} upload limit.`
+      );
+      setFileInputKey((k) => k + 1);
+      return;
+    }
+    setError(null);
     setAudioFile(file);
     if (file) setRecorderKey((k) => k + 1);
   }
@@ -76,6 +93,12 @@ export function UploadForm({
     const hasAudio = !!audioFile || !!existingAudioUrl;
     if (!effectiveParentPostId && !hasAudio) {
       setError("An audio file is required to start a new song idea.");
+      return;
+    }
+    if (audioFile && audioFile.size > MAX_UPLOAD_BYTES) {
+      setError(
+        `That audio file is ${formatBytes(audioFile.size)}, which is over the ${formatBytes(MAX_UPLOAD_BYTES)} upload limit.`
+      );
       return;
     }
 
@@ -211,6 +234,9 @@ export function UploadForm({
             className="text-sm text-muted file:mr-3 file:min-h-11 file:rounded-md file:border-0 file:bg-line file:px-3 file:py-2 file:text-foreground"
           />
         </div>
+        <p className="mt-1 text-xs text-muted">
+          Recordings stop automatically at 15 minutes. Files up to {formatBytes(MAX_UPLOAD_BYTES)}.
+        </p>
       </div>
 
       <div>
