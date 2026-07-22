@@ -221,7 +221,7 @@ function SidebarContent({
         }
       />
 
-      <div className="flex-1" />
+      <div className="min-h-8 flex-1" />
 
       <div className="border-t border-dashed border-line-dashed pt-4">
         <p className="truncate text-sm text-muted">{label}</p>
