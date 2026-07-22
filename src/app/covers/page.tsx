@@ -16,11 +16,15 @@ type CoverSong = {
   created_at: string;
 };
 
-const STATUSES: { value: CoverStatus; color: string; label: string }[] = [
-  { value: "not_started", color: "#e15c4f", label: "not learned" },
-  { value: "partial", color: "#e0b23e", label: "in progress" },
-  { value: "ready", color: "#6fbf73", label: "stage ready" },
+const STATUSES: { value: CoverStatus; color: string; label: string; fill: number }[] = [
+  { value: "not_started", color: "#e15c4f", label: "not learned", fill: 10 },
+  { value: "partial", color: "#e0b23e", label: "in progress", fill: 55 },
+  { value: "ready", color: "#6fbf73", label: "stage ready", fill: 100 },
 ];
+
+function statusInfo(status: CoverStatus) {
+  return STATUSES.find((s) => s.value === status) ?? STATUSES[0];
+}
 
 const STATUS_ORDER: Record<CoverStatus, number> = { not_started: 0, partial: 1, ready: 2 };
 
@@ -43,28 +47,34 @@ function errorMessage(err: unknown): string {
   return "Something went wrong.";
 }
 
-function StatusDots({
+function StatusGauge({
   song,
   onChange,
 }: {
   song: CoverSong;
   onChange: (id: string, status: CoverStatus) => void;
 }) {
+  const current = statusInfo(song.status);
   return (
     <div className="flex items-center gap-2">
-      {STATUSES.map((s) => (
-        <button
-          key={s.value}
-          type="button"
-          aria-label={s.label}
-          onClick={() => onChange(song.id, s.value)}
-          className="h-4 w-4 shrink-0 rounded-full border-2 transition"
-          style={{
-            borderColor: s.color,
-            background: song.status === s.value ? s.color : "transparent",
-          }}
+      <span className="w-20 shrink-0 text-xs lowercase text-muted">{current.label}</span>
+      <div className="relative h-2.5 w-24 shrink-0 overflow-hidden rounded-full bg-line">
+        <div
+          className="absolute inset-y-0 left-0 rounded-full transition-all"
+          style={{ width: `${current.fill}%`, background: current.color }}
         />
-      ))}
+        <div className="absolute inset-0 flex">
+          {STATUSES.map((s) => (
+            <button
+              key={s.value}
+              type="button"
+              aria-label={s.label}
+              onClick={() => onChange(song.id, s.value)}
+              className="flex-1 border-r border-background last:border-r-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+            />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -282,7 +292,7 @@ function CoversPageContent() {
                     {artist && <span className="whitespace-nowrap text-muted">- {artist}</span>}
                   </div>
                   <div className="flex shrink-0 items-center gap-4">
-                    <StatusDots song={song} onChange={handleStatusChange} />
+                    <StatusGauge song={song} onChange={handleStatusChange} />
                     <button
                       type="button"
                       onClick={() => handleDelete(song.id)}
