@@ -372,8 +372,8 @@ function ShowsPageContent() {
 
   return (
     <div>
-      <Link href="/library" className="mb-4 inline-block text-sm font-medium text-accent hover:underline">
-        ← back to song ideas
+      <Link href="/" className="mb-4 inline-block text-sm font-medium text-accent hover:underline">
+        ← back home
       </Link>
 
       <h1 className="mb-1 font-display text-2xl lowercase text-foreground">shows</h1>

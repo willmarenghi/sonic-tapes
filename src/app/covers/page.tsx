@@ -135,10 +135,10 @@ function CoversPageContent() {
   return (
     <div>
       <Link
-        href="/library"
+        href="/"
         className="mb-4 inline-block text-sm font-medium text-accent hover:underline"
       >
-        ← back to song ideas
+        ← back home
       </Link>
 
       <h1 className="mb-1 font-display text-2xl lowercase text-foreground">cover songs</h1>
