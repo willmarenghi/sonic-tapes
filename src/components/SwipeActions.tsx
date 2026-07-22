@@ -1,11 +1,17 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const ACTION_WIDTH = 72;
 const SWIPE_THRESHOLD = 8;
 
-type DragInfo = { startX: number; startY: number; startOffset: number; swiping: boolean };
+type DragInfo = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  startOffset: number;
+  swiping: boolean;
+};
 
 export type SwipeAction = {
   label: string;
@@ -22,49 +28,79 @@ export function SwipeActions({
 }) {
   const revealWidth = ACTION_WIDTH * actions.length;
   const [offset, setOffset] = useState(0);
+  const offsetRef = useRef(0);
+  useEffect(() => {
+    offsetRef.current = offset;
+  }, [offset]);
+
   const drag = useRef<DragInfo | null>(null);
   const justClosed = useRef(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   function handlePointerDown(e: React.PointerEvent) {
-    // Without this, a fast or wide swipe that carries the pointer outside
-    // this element's bounds stops delivering move/up events to it entirely,
-    // leaving the row stuck mid-swipe.
-    e.currentTarget.setPointerCapture(e.pointerId);
-    drag.current = { startX: e.clientX, startY: e.clientY, startOffset: offset, swiping: false };
+    drag.current = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      startOffset: offset,
+      swiping: false,
+    };
+    setIsDragging(true);
   }
 
-  function handlePointerMove(e: React.PointerEvent) {
-    const d = drag.current;
-    if (!d) return;
-    const dx = e.clientX - d.startX;
-    const dy = e.clientY - d.startY;
+  // Track the drag via window listeners rather than pointer capture. Capture
+  // retargets pointerup to the capturing element, which silently kills click
+  // events on nested buttons (e.g. the setlist toggle) with mouse input —
+  // touch synthesizes clicks through a different path that isn't affected,
+  // which is why this only broke on desktop. Window listeners avoid that
+  // retargeting entirely while still reliably tracking the pointer even if
+  // it moves outside this row's bounds mid-swipe.
+  useEffect(() => {
+    if (!isDragging) return;
 
-    if (!d.swiping) {
-      if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dy) > Math.abs(dx)) return;
-      d.swiping = true;
+    function handlePointerMove(e: PointerEvent) {
+      const d = drag.current;
+      if (!d || e.pointerId !== d.pointerId) return;
+      const dx = e.clientX - d.startX;
+      const dy = e.clientY - d.startY;
+
+      if (!d.swiping) {
+        if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dy) > Math.abs(dx)) return;
+        d.swiping = true;
+      }
+
+      setOffset(Math.min(0, Math.max(-revealWidth, d.startOffset + dx)));
     }
 
-    setOffset(Math.min(0, Math.max(-revealWidth, d.startOffset + dx)));
-  }
+    function handlePointerUp(e: PointerEvent) {
+      const d = drag.current;
+      if (!d || e.pointerId !== d.pointerId) return;
+      drag.current = null;
+      setIsDragging(false);
 
-  function handlePointerUp() {
-    const d = drag.current;
-    drag.current = null;
-    if (!d) return;
+      if (d.swiping) {
+        setOffset((current) => (current < -revealWidth / 2 ? -revealWidth : 0));
+        return;
+      }
 
-    if (d.swiping) {
-      setOffset((current) => (current < -revealWidth / 2 ? -revealWidth : 0));
-      return;
+      // A plain tap, not a drag. If we were already revealed, treat the tap
+      // as "close this" and swallow it, instead of letting it fall through
+      // to whatever's underneath (e.g. a status button).
+      if (offsetRef.current !== 0) {
+        setOffset(0);
+        justClosed.current = true;
+      }
     }
 
-    // A plain tap, not a drag. If we were already revealed, treat the tap as
-    // "close this" and swallow it, instead of letting it fall through to
-    // whatever's underneath (e.g. a status button).
-    if (offset !== 0) {
-      setOffset(0);
-      justClosed.current = true;
-    }
-  }
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("pointercancel", handlePointerUp);
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("pointercancel", handlePointerUp);
+    };
+  }, [isDragging]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleClickCapture(e: React.MouseEvent) {
     if (justClosed.current) {
@@ -96,9 +132,6 @@ export function SwipeActions({
         className="relative select-none bg-surface transition-transform duration-150 ease-out"
         style={{ transform: `translateX(${offset}px)`, touchAction: "pan-y" }}
         onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
         onClickCapture={handleClickCapture}
       >
         {children}
