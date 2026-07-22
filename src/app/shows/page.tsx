@@ -437,51 +437,68 @@ function ShowsPageContent() {
             const kind = songKind[show.id] ?? "cover";
             const time = formatShowTime(show.show_time);
 
+            const toggleButton = (
+              <div className={`px-4 ${isExpanded ? "" : "pb-3"}`}>
+                <button
+                  type="button"
+                  onClick={() => setExpanded((prev) => ({ ...prev, [show.id]: !prev[show.id] }))}
+                  className="w-full border-t border-dashed border-line-dashed pt-2 text-left text-sm font-medium text-accent hover:underline"
+                >
+                  {isExpanded
+                    ? "hide setlist"
+                    : `setlist · ${songsForShow.length} song${songsForShow.length === 1 ? "" : "s"}`}
+                </button>
+              </div>
+            );
+
             return (
               <li key={show.id} className="overflow-hidden rounded-lg border border-accent bg-surface">
                 {editingShowId === show.id ? (
-                  <div className="flex flex-col gap-2 px-4 py-3">
-                    <div className="flex flex-col gap-2 sm:flex-row">
-                      <input
-                        type="date"
-                        required
-                        value={editDate}
-                        onChange={(e) => setEditDate(e.target.value)}
-                        className="w-full min-w-0 rounded-md border border-line bg-surface px-2 py-2 text-sm text-foreground outline-none focus:border-accent sm:w-auto"
-                      />
-                      <input
-                        type="time"
-                        value={editTime}
-                        onChange={(e) => setEditTime(e.target.value)}
-                        className="w-full min-w-0 rounded-md border border-line bg-surface px-2 py-2 text-sm text-foreground outline-none focus:border-accent sm:w-auto"
-                      />
-                      <input
-                        type="text"
-                        required
-                        value={editLocation}
-                        onChange={(e) => setEditLocation(e.target.value)}
-                        placeholder="venue / location"
-                        className="w-full min-w-0 flex-1 rounded-md border border-line bg-surface px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted focus:border-accent"
-                      />
+                  <>
+                    <div className="flex flex-col gap-2 px-4 py-3">
+                      <div className="flex flex-col gap-2 sm:flex-row">
+                        <input
+                          type="date"
+                          required
+                          value={editDate}
+                          onChange={(e) => setEditDate(e.target.value)}
+                          className="w-full min-w-0 rounded-md border border-line bg-surface px-2 py-2 text-sm text-foreground outline-none focus:border-accent sm:w-auto"
+                        />
+                        <input
+                          type="time"
+                          value={editTime}
+                          onChange={(e) => setEditTime(e.target.value)}
+                          className="w-full min-w-0 rounded-md border border-line bg-surface px-2 py-2 text-sm text-foreground outline-none focus:border-accent sm:w-auto"
+                        />
+                        <input
+                          type="text"
+                          required
+                          value={editLocation}
+                          onChange={(e) => setEditLocation(e.target.value)}
+                          placeholder="venue / location"
+                          className="w-full min-w-0 flex-1 rounded-md border border-line bg-surface px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted focus:border-accent"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleSaveEditShow(show.id)}
+                          disabled={savingEdit}
+                          className="min-h-9 rounded-md bg-accent px-3 text-xs font-medium lowercase text-accent-foreground transition hover:brightness-110 disabled:opacity-60"
+                        >
+                          {savingEdit ? "Saving…" : "Save"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingShowId(null)}
+                          className="min-h-9 rounded-md border border-line px-3 text-xs lowercase text-muted transition hover:text-foreground"
+                        >
+                          Cancel
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleSaveEditShow(show.id)}
-                        disabled={savingEdit}
-                        className="min-h-9 rounded-md bg-accent px-3 text-xs font-medium lowercase text-accent-foreground transition hover:brightness-110 disabled:opacity-60"
-                      >
-                        {savingEdit ? "Saving…" : "Save"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setEditingShowId(null)}
-                        className="min-h-9 rounded-md border border-line px-3 text-xs lowercase text-muted transition hover:text-foreground"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
+                    {toggleButton}
+                  </>
                 ) : (
                   <SwipeActions
                     actions={[
@@ -493,29 +510,21 @@ function ShowsPageContent() {
                       { label: "Remove", onClick: () => handleDeleteShow(show.id) },
                     ]}
                   >
-                    <div className="px-4 py-3">
-                      <p className="text-foreground">{show.location}</p>
-                      <p className="text-xs text-muted">
-                        {formatShowDate(show.show_date)}
-                        {time && ` · ${time}`}
-                      </p>
+                    <div>
+                      <div className="px-4 py-3">
+                        <p className="text-foreground">{show.location}</p>
+                        <p className="text-xs text-muted">
+                          {formatShowDate(show.show_date)}
+                          {time && ` · ${time}`}
+                        </p>
+                      </div>
+                      {toggleButton}
                     </div>
                   </SwipeActions>
                 )}
 
-                <div className="px-4 pb-3">
-                  <button
-                    type="button"
-                    onClick={() => setExpanded((prev) => ({ ...prev, [show.id]: !prev[show.id] }))}
-                    className="border-t border-dashed border-line-dashed pt-2 text-sm font-medium text-accent hover:underline"
-                  >
-                    {isExpanded
-                      ? "hide setlist"
-                      : `setlist · ${songsForShow.length} song${songsForShow.length === 1 ? "" : "s"}`}
-                  </button>
-
-                  {isExpanded && (
-                    <div className="mt-2">
+                {isExpanded && (
+                  <div className="px-4 pb-3 pt-2">
                     {displaySongs.length > 0 && (
                       <ul className="divide-y divide-line">
                         {displaySongs.map((song) => (
@@ -632,8 +641,7 @@ function ShowsPageContent() {
                       </button>
                     </div>
                   </div>
-                  )}
-                </div>
+                )}
               </li>
             );
           })}
