@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { BASE_PATH } from "@/lib/basePath";
 
 const BAND_SIZE = 5;
 const AVATAR_COLORS = ["#d9714f", "#cdb37a", "#cfa8b0", "#a8c0a0", "#9aa6c9"];
@@ -234,9 +235,21 @@ export function AppShell({
   onSelectUser?: (id: string | null) => void;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const label = useProfileLabel();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
+
+  // Following a same-route Link is a no-op in Next.js, so tapping the home
+  // logo while already on "/" wouldn't reset shelf view or the member
+  // filter. Force a full reload in that case so the logo always returns to
+  // the true default state, not just whatever it navigates "toward".
+  function handleLogoClick(e: React.MouseEvent) {
+    if (pathname === "/") {
+      e.preventDefault();
+      window.location.href = `${BASE_PATH}/`;
+    }
+  }
 
   async function handleSignOut() {
     if (!window.confirm("Sign out?")) return;
@@ -287,7 +300,7 @@ export function AppShell({
         >
           <MenuIcon />
         </button>
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/" onClick={handleLogoClick} className="flex items-center gap-2">
           <Logo className="h-6 w-6" />
           <span className="font-display text-lg lowercase text-foreground">sonic tapes</span>
         </Link>

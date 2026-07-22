@@ -10,6 +10,10 @@ import { AppShell } from "@/components/AppShell";
 import { PostCard } from "@/components/PostCard";
 import type { Post, PostWithReplies, Profile } from "@/lib/types";
 
+function formatShelfDate(iso: string) {
+  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
 function RingIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden>
@@ -188,7 +192,12 @@ function Feed({ selectedUserId }: { selectedUserId: string | null }) {
                 )}
               </div>
               <div className="min-w-0">
-                <p className="truncate text-sm text-foreground">{thread.title}</p>
+                <div className="flex items-baseline justify-between gap-1">
+                  <p className="truncate text-sm text-foreground">{thread.title}</p>
+                  <span className="shrink-0 text-[10px] text-muted">
+                    {formatShelfDate(thread.created_at)}
+                  </span>
+                </div>
                 <p className="truncate text-xs text-muted">{thread.uploader?.name ?? "Unknown"}</p>
               </div>
             </button>
