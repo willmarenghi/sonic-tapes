@@ -348,26 +348,26 @@ function ShowsPageContent() {
         onSubmit={handleAddShow}
         className="mb-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end"
       >
-        <label className="flex flex-col gap-1 text-xs lowercase text-muted">
+        <label className="flex min-w-0 flex-col gap-1 text-xs lowercase text-muted sm:min-w-[9.5rem]">
           date
           <input
             type="date"
             required
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="w-full rounded-md border border-line bg-surface px-3 py-2 text-base text-foreground outline-none focus:border-accent sm:w-auto"
+            className="w-full min-w-0 rounded-md border border-line bg-surface px-3 py-2 text-base text-foreground outline-none focus:border-accent"
           />
         </label>
-        <label className="flex flex-col gap-1 text-xs lowercase text-muted">
+        <label className="flex min-w-0 flex-col gap-1 text-xs lowercase text-muted sm:min-w-[7.5rem]">
           time
           <input
             type="time"
             value={time}
             onChange={(e) => setTime(e.target.value)}
-            className="w-full rounded-md border border-line bg-surface px-3 py-2 text-base text-foreground outline-none focus:border-accent sm:w-auto"
+            className="w-full min-w-0 rounded-md border border-line bg-surface px-3 py-2 text-base text-foreground outline-none focus:border-accent"
           />
         </label>
-        <label className="flex flex-1 flex-col gap-1 text-xs lowercase text-muted">
+        <label className="flex min-w-0 flex-1 flex-col gap-1 text-xs lowercase text-muted">
           venue
           <input
             type="text"
@@ -375,7 +375,7 @@ function ShowsPageContent() {
             value={location}
             onChange={(e) => setLocation(e.target.value)}
             placeholder="venue / location"
-            className="w-full rounded-md border border-line bg-surface px-3 py-2 text-base text-foreground outline-none placeholder:text-muted focus:border-accent"
+            className="w-full min-w-0 rounded-md border border-line bg-surface px-3 py-2 text-base text-foreground outline-none placeholder:text-muted focus:border-accent"
           />
         </label>
         <button
@@ -401,7 +401,7 @@ function ShowsPageContent() {
             const time = formatShowTime(show.show_time);
 
             return (
-              <li key={show.id} className="rounded-lg border-2 border-accent bg-surface px-4 py-3">
+              <li key={show.id} className="rounded-lg border border-accent bg-surface px-4 py-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-foreground">{show.location}</p>

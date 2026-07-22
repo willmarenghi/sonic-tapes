@@ -216,6 +216,19 @@ function Feed({ selectedUserId }: { selectedUserId: string | null }) {
 export default function FeedPage() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
+  // The default useState(null) only resets on a fresh mount. If the browser
+  // restores this page from bfcache (e.g. hitting back), the whole component
+  // — including whatever member was selected — comes back as-is. Resetting
+  // on "pageshow" covers that case too, so landing back on the feed always
+  // shows "all" rather than whoever was last filtered.
+  useEffect(() => {
+    function handlePageShow() {
+      setSelectedUserId(null);
+    }
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
+  }, []);
+
   return (
     <RequireAuth>
       <AppShell selectedUserId={selectedUserId} onSelectUser={setSelectedUserId}>
