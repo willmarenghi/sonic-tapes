@@ -198,7 +198,7 @@ function CoversPageContent() {
       <h1 className="mb-1 font-display text-2xl lowercase text-foreground">cover songs</h1>
       <p className="mb-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
         <span>
-          {songs.length} song{songs.length === 1 ? "" : "s"}
+          {songs.length} song{songs.length === 1 ? "" : "s"}:
         </span>
         {statusCounts.map((s) => (
           <span key={s.value}>
