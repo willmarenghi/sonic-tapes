@@ -16,10 +16,10 @@ type CoverSong = {
   created_at: string;
 };
 
-const STATUSES: { value: CoverStatus; color: string; label: string; fill: number }[] = [
-  { value: "not_started", color: "#e15c4f", label: "not learned", fill: 10 },
-  { value: "partial", color: "#e0b23e", label: "in progress", fill: 55 },
-  { value: "ready", color: "#6fbf73", label: "stage ready", fill: 100 },
+const STATUSES: { value: CoverStatus; color: string; label: string; fill: number; emoji: string }[] = [
+  { value: "not_started", color: "#e15c4f", label: "not learned", fill: 10, emoji: "🔴" },
+  { value: "partial", color: "#e0b23e", label: "in progress", fill: 55, emoji: "🟡" },
+  { value: "ready", color: "#6fbf73", label: "stage ready", fill: 100, emoji: "🟢" },
 ];
 
 function statusInfo(status: CoverStatus) {
@@ -181,6 +181,11 @@ function CoversPageContent() {
     return STATUS_ORDER[a.status] - STATUS_ORDER[b.status];
   });
 
+  const statusCounts = STATUSES.map((s) => ({
+    ...s,
+    count: songs.filter((song) => song.status === s.value).length,
+  }));
+
   return (
     <div>
       <Link
@@ -191,8 +196,16 @@ function CoversPageContent() {
       </Link>
 
       <h1 className="mb-1 font-display text-2xl lowercase text-foreground">cover songs</h1>
-      <p className="mb-6 text-sm text-muted">
-        {songs.length} song{songs.length === 1 ? "" : "s"}
+      <p className="mb-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
+        <span>
+          {songs.length} song{songs.length === 1 ? "" : "s"}
+        </span>
+        {statusCounts.map((s) => (
+          <span key={s.value}>
+            {s.emoji}
+            {s.count}
+          </span>
+        ))}
       </p>
 
       <form onSubmit={handleAdd} className="mb-6 flex flex-wrap gap-3">
