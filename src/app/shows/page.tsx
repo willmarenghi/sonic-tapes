@@ -386,7 +386,7 @@ function ShowsPageContent() {
         className="mb-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end"
       >
         <div className="flex gap-3">
-          <label className="flex min-w-0 flex-1 flex-col gap-1 text-xs lowercase text-muted sm:w-[9.5rem] sm:flex-none">
+          <label className="flex w-[calc(50%-0.375rem)] min-w-0 flex-col gap-1 overflow-hidden text-xs lowercase text-muted sm:w-[9.5rem]">
             date
             <input
               type="date"
@@ -396,7 +396,7 @@ function ShowsPageContent() {
               className="w-full min-w-0 rounded-md border border-line bg-surface px-2 py-2 text-sm text-foreground outline-none focus:border-accent"
             />
           </label>
-          <label className="flex min-w-0 flex-1 flex-col gap-1 text-xs lowercase text-muted sm:w-[7.5rem] sm:flex-none">
+          <label className="flex w-[calc(50%-0.375rem)] min-w-0 flex-col gap-1 overflow-hidden text-xs lowercase text-muted sm:w-[7.5rem]">
             time
             <input
               type="time"
@@ -460,19 +460,23 @@ function ShowsPageContent() {
                     <div className="flex flex-col gap-2 px-4 py-3">
                       <div className="flex flex-col gap-2 sm:flex-row">
                         <div className="flex gap-2">
-                          <input
-                            type="date"
-                            required
-                            value={editDate}
-                            onChange={(e) => setEditDate(e.target.value)}
-                            className="min-w-0 flex-1 rounded-md border border-line bg-surface px-2 py-2 text-sm text-foreground outline-none focus:border-accent sm:w-[9.5rem] sm:flex-none"
-                          />
-                          <input
-                            type="time"
-                            value={editTime}
-                            onChange={(e) => setEditTime(e.target.value)}
-                            className="min-w-0 flex-1 rounded-md border border-line bg-surface px-2 py-2 text-sm text-foreground outline-none focus:border-accent sm:w-[7.5rem] sm:flex-none"
-                          />
+                          <div className="w-[calc(50%-0.25rem)] min-w-0 overflow-hidden sm:w-[9.5rem]">
+                            <input
+                              type="date"
+                              required
+                              value={editDate}
+                              onChange={(e) => setEditDate(e.target.value)}
+                              className="w-full min-w-0 rounded-md border border-line bg-surface px-2 py-2 text-sm text-foreground outline-none focus:border-accent"
+                            />
+                          </div>
+                          <div className="w-[calc(50%-0.25rem)] min-w-0 overflow-hidden sm:w-[7.5rem]">
+                            <input
+                              type="time"
+                              value={editTime}
+                              onChange={(e) => setEditTime(e.target.value)}
+                              className="w-full min-w-0 rounded-md border border-line bg-surface px-2 py-2 text-sm text-foreground outline-none focus:border-accent"
+                            />
+                          </div>
                         </div>
                         <input
                           type="text"
