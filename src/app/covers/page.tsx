@@ -5,39 +5,16 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
-
-type CoverStatus = "not_started" | "partial" | "ready";
-
-type CoverSong = {
-  id: string;
-  title: string;
-  status: CoverStatus;
-  added_by: string | null;
-  created_at: string;
-};
-
-const STATUSES: { value: CoverStatus; color: string; label: string; fill: number }[] = [
-  { value: "not_started", color: "#e15c4f", label: "not learned", fill: 10 },
-  { value: "partial", color: "#e0b23e", label: "in progress", fill: 55 },
-  { value: "ready", color: "#6fbf73", label: "stage ready", fill: 100 },
-];
-
-function statusInfo(status: CoverStatus) {
-  return STATUSES.find((s) => s.value === status) ?? STATUSES[0];
-}
-
-const STATUS_ORDER: Record<CoverStatus, number> = { not_started: 0, partial: 1, ready: 2 };
+import { StatusGauge } from "@/components/StatusGauge";
+import {
+  STATUSES,
+  STATUS_ORDER,
+  splitTitleArtist,
+  type CoverSong,
+  type CoverStatus,
+} from "@/lib/coverSongs";
 
 type SortMode = "alpha" | "status" | "date";
-
-function splitTitleArtist(title: string): { songTitle: string; artist: string | null } {
-  const separatorIndex = title.indexOf(" - ");
-  if (separatorIndex === -1) return { songTitle: title, artist: null };
-  return {
-    songTitle: title.slice(0, separatorIndex),
-    artist: title.slice(separatorIndex + 3),
-  };
-}
 
 function errorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
@@ -45,38 +22,6 @@ function errorMessage(err: unknown): string {
     return err.message;
   }
   return "Something went wrong.";
-}
-
-function StatusGauge({
-  song,
-  onChange,
-}: {
-  song: CoverSong;
-  onChange: (id: string, status: CoverStatus) => void;
-}) {
-  const current = statusInfo(song.status);
-  return (
-    <div className="flex flex-col items-start gap-1 md:flex-row md:items-center md:gap-2">
-      <span className="text-xs lowercase text-muted md:w-20 md:shrink-0">{current.label}</span>
-      <div className="relative h-2.5 w-24 shrink-0 overflow-hidden rounded-full bg-line">
-        <div
-          className="absolute inset-y-0 left-0 rounded-full transition-all"
-          style={{ width: `${current.fill}%`, background: current.color }}
-        />
-        <div className="absolute inset-0 flex">
-          {STATUSES.map((s) => (
-            <button
-              key={s.value}
-              type="button"
-              aria-label={s.label}
-              onClick={() => onChange(song.id, s.value)}
-              className="flex-1 border-r border-background last:border-r-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
-            />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
 }
 
 function CoversPageContent() {
@@ -292,7 +237,10 @@ function CoversPageContent() {
                     {artist && <span className="whitespace-nowrap text-muted">- {artist}</span>}
                   </div>
                   <div className="flex shrink-0 items-center gap-4">
-                    <StatusGauge song={song} onChange={handleStatusChange} />
+                    <StatusGauge
+                      status={song.status}
+                      onChange={(status) => handleStatusChange(song.id, status)}
+                    />
                     <button
                       type="button"
                       onClick={() => handleDelete(song.id)}

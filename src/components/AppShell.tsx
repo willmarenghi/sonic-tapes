@@ -182,6 +182,19 @@ function SidebarContent({
         cover songs
       </Link>
 
+      <Link
+        href="/shows"
+        onClick={onNavigate}
+        className="mt-2 flex min-h-11 items-center justify-center rounded-md border px-3 text-sm lowercase transition hover:brightness-110"
+        style={{
+          borderColor: "#e15c4f",
+          color: "#f0a098",
+          background: "rgba(225, 92, 79, 0.08)",
+        }}
+      >
+        shows
+      </Link>
+
       <BandRoster
         selectedUserId={selectedUserId}
         onSelectUser={
