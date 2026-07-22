@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
 import { StatusGauge } from "@/components/StatusGauge";
+import { SwipeToDelete } from "@/components/SwipeToDelete";
 import { splitTitleArtist, type CoverSong } from "@/lib/coverSongs";
 
 type Show = {
@@ -86,33 +87,32 @@ function SetlistSong({
   return (
     <li
       data-song-row={song.id}
-      className={`flex items-center gap-3 py-2 transition-opacity ${isDragging ? "opacity-40" : ""}`}
+      className={`flex items-center gap-3 transition-opacity ${isDragging ? "opacity-40" : ""}`}
     >
       <button
         type="button"
         onPointerDown={() => onDragStart(song.id)}
         aria-label="Drag to reorder"
-        className="shrink-0 cursor-grab touch-none text-muted active:cursor-grabbing"
+        className="shrink-0 cursor-grab touch-none py-2 text-muted active:cursor-grabbing"
       >
         <GripIcon />
       </button>
-      <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-1.5">
-        <span className="text-foreground">{songTitle}</span>
-        {artist && <span className="whitespace-nowrap text-muted">- {artist}</span>}
-      </div>
-      <div className="flex shrink-0 items-center gap-3">
-        {coverSong ? (
-          <StatusGauge status={coverSong.status} />
-        ) : (
-          <span className="text-xs lowercase text-muted">original</span>
-        )}
-        <button
-          type="button"
-          onClick={() => onRemove(song.id)}
-          className="text-xs text-red-400 hover:underline"
-        >
-          Remove
-        </button>
+      <div className="min-w-0 flex-1">
+        <SwipeToDelete onDelete={() => onRemove(song.id)}>
+          <div className="flex items-center justify-between gap-3 py-2">
+            <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-1.5">
+              <span className="text-foreground">{songTitle}</span>
+              {artist && <span className="whitespace-nowrap text-muted">- {artist}</span>}
+            </div>
+            <div className="flex shrink-0 items-center gap-3">
+              {coverSong ? (
+                <StatusGauge status={coverSong.status} />
+              ) : (
+                <span className="text-xs lowercase text-muted">original</span>
+              )}
+            </div>
+          </div>
+        </SwipeToDelete>
       </div>
     </li>
   );

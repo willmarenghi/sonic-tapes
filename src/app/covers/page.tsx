@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
 import { StatusGauge } from "@/components/StatusGauge";
+import { SwipeToDelete } from "@/components/SwipeToDelete";
 import {
   STATUSES,
   STATUS_ORDER,
@@ -228,27 +229,21 @@ function CoversPageContent() {
             {sortedSongs.map((song) => {
               const { songTitle, artist } = splitTitleArtist(song.title);
               return (
-                <li
-                  key={song.id}
-                  className="flex items-center justify-between gap-3 rounded-lg border-2 border-line bg-surface px-4 py-3"
-                >
-                  <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-1.5">
-                    <span className="text-foreground">{songTitle}</span>
-                    {artist && <span className="whitespace-nowrap text-muted">- {artist}</span>}
-                  </div>
-                  <div className="flex shrink-0 items-center gap-4">
-                    <StatusGauge
-                      status={song.status}
-                      onChange={(status) => handleStatusChange(song.id, status)}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(song.id)}
-                      className="text-xs text-red-400 hover:underline"
-                    >
-                      Remove
-                    </button>
-                  </div>
+                <li key={song.id} className="overflow-hidden rounded-lg border-2 border-line">
+                  <SwipeToDelete onDelete={() => handleDelete(song.id)}>
+                    <div className="flex items-center justify-between gap-3 px-4 py-3">
+                      <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-1.5">
+                        <span className="text-foreground">{songTitle}</span>
+                        {artist && <span className="whitespace-nowrap text-muted">- {artist}</span>}
+                      </div>
+                      <div className="flex shrink-0 items-center gap-4">
+                        <StatusGauge
+                          status={song.status}
+                          onChange={(status) => handleStatusChange(song.id, status)}
+                        />
+                      </div>
+                    </div>
+                  </SwipeToDelete>
                 </li>
               );
             })}
