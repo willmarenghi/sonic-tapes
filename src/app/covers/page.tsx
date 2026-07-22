@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
 import { StatusGauge } from "@/components/StatusGauge";
-import { SwipeToDelete } from "@/components/SwipeToDelete";
+import { SwipeActions } from "@/components/SwipeActions";
 import {
   STATUSES,
   STATUS_ORDER,
@@ -33,7 +33,7 @@ function CoversPageContent() {
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
-  const [sortMode, setSortMode] = useState<SortMode>("alpha");
+  const [sortMode, setSortMode] = useState<SortMode>("status");
 
   useEffect(() => {
     const supabase = createClient();
@@ -230,7 +230,7 @@ function CoversPageContent() {
               const { songTitle, artist } = splitTitleArtist(song.title);
               return (
                 <li key={song.id} className="overflow-hidden rounded-lg border-2 border-line">
-                  <SwipeToDelete onDelete={() => handleDelete(song.id)}>
+                  <SwipeActions actions={[{ label: "Remove", onClick: () => handleDelete(song.id) }]}>
                     <div className="flex items-center justify-between gap-3 px-4 py-3">
                       <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-1.5">
                         <span className="text-foreground">{songTitle}</span>
@@ -243,7 +243,7 @@ function CoversPageContent() {
                         />
                       </div>
                     </div>
-                  </SwipeToDelete>
+                  </SwipeActions>
                 </li>
               );
             })}

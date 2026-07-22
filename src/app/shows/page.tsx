@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
 import { StatusGauge } from "@/components/StatusGauge";
-import { SwipeToDelete } from "@/components/SwipeToDelete";
+import { SwipeActions } from "@/components/SwipeActions";
 import { splitTitleArtist, type CoverSong } from "@/lib/coverSongs";
 
 type Show = {
@@ -98,7 +98,7 @@ function SetlistSong({
         <GripIcon />
       </button>
       <div className="min-w-0 flex-1">
-        <SwipeToDelete onDelete={() => onRemove(song.id)}>
+        <SwipeActions actions={[{ label: "Remove", onClick: () => onRemove(song.id) }]}>
           <div className="flex items-center justify-between gap-3 py-2">
             <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-1.5">
               <span className="text-foreground">{songTitle}</span>
@@ -112,7 +112,7 @@ function SetlistSong({
               )}
             </div>
           </div>
-        </SwipeToDelete>
+        </SwipeActions>
       </div>
     </li>
   );
@@ -130,6 +130,12 @@ function ShowsPageContent() {
   const [time, setTime] = useState("");
   const [location, setLocation] = useState("");
   const [adding, setAdding] = useState(false);
+
+  const [editingShowId, setEditingShowId] = useState<string | null>(null);
+  const [editDate, setEditDate] = useState("");
+  const [editTime, setEditTime] = useState("");
+  const [editLocation, setEditLocation] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [songKind, setSongKind] = useState<Record<string, ShowSongKind>>({});
@@ -274,6 +280,37 @@ function ShowsPageContent() {
     setReloadKey((k) => k + 1);
   }
 
+  function startEditShow(show: Show) {
+    setEditingShowId(show.id);
+    setEditDate(show.show_date);
+    setEditTime(show.show_time ? show.show_time.slice(0, 5) : "");
+    setEditLocation(show.location);
+  }
+
+  async function handleSaveEditShow(id: string) {
+    if (!editDate || !editLocation.trim()) return;
+    setSavingEdit(true);
+    setError(null);
+
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("shows")
+      .update({
+        show_date: editDate,
+        show_time: editTime || null,
+        location: editLocation.trim(),
+      })
+      .eq("id", id);
+
+    setSavingEdit(false);
+    if (error) {
+      setError(errorMessage(error));
+      return;
+    }
+    setEditingShowId(null);
+    setReloadKey((k) => k + 1);
+  }
+
   async function handleAddSong(showId: string) {
     if (!currentUserId) return;
     const kind = songKind[showId] ?? "cover";
@@ -348,23 +385,23 @@ function ShowsPageContent() {
         onSubmit={handleAddShow}
         className="mb-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end"
       >
-        <label className="flex min-w-0 flex-col gap-1 text-xs lowercase text-muted sm:min-w-[9.5rem]">
+        <label className="flex min-w-0 flex-col gap-1 overflow-hidden text-xs lowercase text-muted sm:min-w-[9.5rem]">
           date
           <input
             type="date"
             required
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="w-full min-w-0 rounded-md border border-line bg-surface px-3 py-2 text-base text-foreground outline-none focus:border-accent"
+            className="w-full min-w-0 rounded-md border border-line bg-surface px-2 py-2 text-sm text-foreground outline-none focus:border-accent"
           />
         </label>
-        <label className="flex min-w-0 flex-col gap-1 text-xs lowercase text-muted sm:min-w-[7.5rem]">
+        <label className="flex min-w-0 flex-col gap-1 overflow-hidden text-xs lowercase text-muted sm:min-w-[7.5rem]">
           time
           <input
             type="time"
             value={time}
             onChange={(e) => setTime(e.target.value)}
-            className="w-full min-w-0 rounded-md border border-line bg-surface px-3 py-2 text-base text-foreground outline-none focus:border-accent"
+            className="w-full min-w-0 rounded-md border border-line bg-surface px-2 py-2 text-sm text-foreground outline-none focus:border-accent"
           />
         </label>
         <label className="flex min-w-0 flex-1 flex-col gap-1 text-xs lowercase text-muted">
@@ -401,36 +438,84 @@ function ShowsPageContent() {
             const time = formatShowTime(show.show_time);
 
             return (
-              <li key={show.id} className="rounded-lg border border-accent bg-surface px-4 py-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-foreground">{show.location}</p>
-                    <p className="text-xs text-muted">
-                      {formatShowDate(show.show_date)}
-                      {time && ` · ${time}`}
-                    </p>
+              <li key={show.id} className="overflow-hidden rounded-lg border border-accent bg-surface">
+                {editingShowId === show.id ? (
+                  <div className="flex flex-col gap-2 px-4 py-3">
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <input
+                        type="date"
+                        required
+                        value={editDate}
+                        onChange={(e) => setEditDate(e.target.value)}
+                        className="w-full min-w-0 rounded-md border border-line bg-surface px-2 py-2 text-sm text-foreground outline-none focus:border-accent sm:w-auto"
+                      />
+                      <input
+                        type="time"
+                        value={editTime}
+                        onChange={(e) => setEditTime(e.target.value)}
+                        className="w-full min-w-0 rounded-md border border-line bg-surface px-2 py-2 text-sm text-foreground outline-none focus:border-accent sm:w-auto"
+                      />
+                      <input
+                        type="text"
+                        required
+                        value={editLocation}
+                        onChange={(e) => setEditLocation(e.target.value)}
+                        placeholder="venue / location"
+                        className="w-full min-w-0 flex-1 rounded-md border border-line bg-surface px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted focus:border-accent"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleSaveEditShow(show.id)}
+                        disabled={savingEdit}
+                        className="min-h-9 rounded-md bg-accent px-3 text-xs font-medium lowercase text-accent-foreground transition hover:brightness-110 disabled:opacity-60"
+                      >
+                        {savingEdit ? "Saving…" : "Save"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingShowId(null)}
+                        className="min-h-9 rounded-md border border-line px-3 text-xs lowercase text-muted transition hover:text-foreground"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </div>
+                ) : (
+                  <SwipeActions
+                    actions={[
+                      {
+                        label: "Edit",
+                        onClick: () => startEditShow(show),
+                        className: "bg-accent text-accent-foreground",
+                      },
+                      { label: "Remove", onClick: () => handleDeleteShow(show.id) },
+                    ]}
+                  >
+                    <div className="px-4 py-3">
+                      <p className="text-foreground">{show.location}</p>
+                      <p className="text-xs text-muted">
+                        {formatShowDate(show.show_date)}
+                        {time && ` · ${time}`}
+                      </p>
+                    </div>
+                  </SwipeActions>
+                )}
+
+                <div className="px-4 pb-3">
                   <button
                     type="button"
-                    onClick={() => handleDeleteShow(show.id)}
-                    className="shrink-0 text-xs text-red-400 hover:underline"
+                    onClick={() => setExpanded((prev) => ({ ...prev, [show.id]: !prev[show.id] }))}
+                    className="border-t border-dashed border-line-dashed pt-2 text-sm font-medium text-accent hover:underline"
                   >
-                    Remove
+                    {isExpanded
+                      ? "hide setlist"
+                      : `setlist · ${songsForShow.length} song${songsForShow.length === 1 ? "" : "s"}`}
                   </button>
-                </div>
 
-                <button
-                  type="button"
-                  onClick={() => setExpanded((prev) => ({ ...prev, [show.id]: !prev[show.id] }))}
-                  className="mt-3 border-t border-dashed border-line-dashed pt-2 text-sm font-medium text-accent hover:underline"
-                >
-                  {isExpanded
-                    ? "hide setlist"
-                    : `setlist · ${songsForShow.length} song${songsForShow.length === 1 ? "" : "s"}`}
-                </button>
-
-                {isExpanded && (
-                  <div className="mt-2">
+                  {isExpanded && (
+                    <div className="mt-2">
                     {displaySongs.length > 0 && (
                       <ul className="divide-y divide-line">
                         {displaySongs.map((song) => (
@@ -547,7 +632,8 @@ function ShowsPageContent() {
                       </button>
                     </div>
                   </div>
-                )}
+                  )}
+                </div>
               </li>
             );
           })}

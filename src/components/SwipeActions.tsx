@@ -2,20 +2,25 @@
 
 import { useRef, useState } from "react";
 
-const REVEAL_WIDTH = 84;
+const ACTION_WIDTH = 72;
 const SWIPE_THRESHOLD = 8;
 
 type DragInfo = { startX: number; startY: number; startOffset: number; swiping: boolean };
 
-export function SwipeToDelete({
-  onDelete,
-  deleteLabel = "Remove",
+export type SwipeAction = {
+  label: string;
+  onClick: () => void;
+  className?: string;
+};
+
+export function SwipeActions({
+  actions,
   children,
 }: {
-  onDelete: () => void;
-  deleteLabel?: string;
+  actions: SwipeAction[];
   children: React.ReactNode;
 }) {
+  const revealWidth = ACTION_WIDTH * actions.length;
   const [offset, setOffset] = useState(0);
   const drag = useRef<DragInfo | null>(null);
   const justClosed = useRef(false);
@@ -39,7 +44,7 @@ export function SwipeToDelete({
       d.swiping = true;
     }
 
-    setOffset(Math.min(0, Math.max(-REVEAL_WIDTH, d.startOffset + dx)));
+    setOffset(Math.min(0, Math.max(-revealWidth, d.startOffset + dx)));
   }
 
   function handlePointerUp() {
@@ -48,7 +53,7 @@ export function SwipeToDelete({
     if (!d) return;
 
     if (d.swiping) {
-      setOffset((current) => (current < -REVEAL_WIDTH / 2 ? -REVEAL_WIDTH : 0));
+      setOffset((current) => (current < -revealWidth / 2 ? -revealWidth : 0));
       return;
     }
 
@@ -71,17 +76,22 @@ export function SwipeToDelete({
 
   return (
     <div className="relative overflow-hidden">
-      <button
-        type="button"
-        onClick={() => {
-          setOffset(0);
-          onDelete();
-        }}
-        style={{ width: REVEAL_WIDTH }}
-        className="absolute inset-y-0 right-0 flex items-center justify-center bg-red-500 text-sm font-medium text-white"
-      >
-        {deleteLabel}
-      </button>
+      <div className="absolute inset-y-0 right-0 flex">
+        {actions.map((action) => (
+          <button
+            key={action.label}
+            type="button"
+            onClick={() => {
+              setOffset(0);
+              action.onClick();
+            }}
+            style={{ width: ACTION_WIDTH }}
+            className={`flex items-center justify-center text-sm font-medium ${action.className ?? "bg-red-500 text-white"}`}
+          >
+            {action.label}
+          </button>
+        ))}
+      </div>
       <div
         className="relative select-none bg-surface transition-transform duration-150 ease-out"
         style={{ transform: `translateX(${offset}px)`, touchAction: "pan-y" }}
