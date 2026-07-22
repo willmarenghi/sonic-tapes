@@ -2,9 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { BASE_PATH } from "@/lib/basePath";
 
 const BAND_SIZE = 5;
 const AVATAR_COLORS = ["#d9714f", "#cdb37a", "#cfa8b0", "#a8c0a0", "#9aa6c9"];
@@ -80,7 +79,7 @@ function BandRoster({
   onSelectUser?: (id: string | null) => void;
 }) {
   const router = useRouter();
-  const selectUser = onSelectUser ?? (() => router.push("/"));
+  const selectUser = onSelectUser ?? (() => router.push("/library"));
 
   const members = useBandMembers();
   const blanks = Math.max(0, BAND_SIZE - members.length);
@@ -172,6 +171,19 @@ function SidebarContent({
         </Link>
 
         <Link
+          href="/library"
+          onClick={onNavigate}
+          className="flex min-h-11 items-center justify-center rounded-md border px-3 text-sm lowercase transition hover:brightness-110"
+          style={{
+            borderColor: "#5c8fd6",
+            color: "#a7c2ec",
+            background: "rgba(92, 143, 214, 0.08)",
+          }}
+        >
+          idea library
+        </Link>
+
+        <Link
           href="/covers"
           onClick={onNavigate}
           className="flex min-h-11 items-center justify-center rounded-md border px-3 text-sm lowercase transition hover:brightness-110"
@@ -235,21 +247,9 @@ export function AppShell({
   onSelectUser?: (id: string | null) => void;
 }) {
   const router = useRouter();
-  const pathname = usePathname();
   const label = useProfileLabel();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
-
-  // Following a same-route Link is a no-op in Next.js, so tapping the home
-  // logo while already on "/" wouldn't reset shelf view or the member
-  // filter. Force a full reload in that case so the logo always returns to
-  // the true default state, not just whatever it navigates "toward".
-  function handleLogoClick(e: React.MouseEvent) {
-    if (pathname === "/") {
-      e.preventDefault();
-      window.location.href = `${BASE_PATH}/`;
-    }
-  }
 
   async function handleSignOut() {
     if (!window.confirm("Sign out?")) return;
@@ -300,7 +300,7 @@ export function AppShell({
         >
           <MenuIcon />
         </button>
-        <Link href="/" onClick={handleLogoClick} className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2">
           <Logo className="h-6 w-6" />
           <span className="font-display text-lg lowercase text-foreground">sonic tapes</span>
         </Link>

@@ -372,7 +372,7 @@ function ShowsPageContent() {
 
   return (
     <div>
-      <Link href="/" className="mb-4 inline-block text-sm font-medium text-accent hover:underline">
+      <Link href="/library" className="mb-4 inline-block text-sm font-medium text-accent hover:underline">
         ← back to song ideas
       </Link>
 
