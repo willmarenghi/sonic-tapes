@@ -16,10 +16,10 @@ type CoverSong = {
   created_at: string;
 };
 
-const STATUSES: { value: CoverStatus; color: string; label: string; fill: number; emoji: string }[] = [
-  { value: "not_started", color: "#e15c4f", label: "not learned", fill: 10, emoji: "🔴" },
-  { value: "partial", color: "#e0b23e", label: "in progress", fill: 55, emoji: "🟡" },
-  { value: "ready", color: "#6fbf73", label: "stage ready", fill: 100, emoji: "🟢" },
+const STATUSES: { value: CoverStatus; color: string; label: string; fill: number }[] = [
+  { value: "not_started", color: "#e15c4f", label: "not learned", fill: 10 },
+  { value: "partial", color: "#e0b23e", label: "in progress", fill: 55 },
+  { value: "ready", color: "#6fbf73", label: "stage ready", fill: 100 },
 ];
 
 function statusInfo(status: CoverStatus) {
@@ -201,8 +201,8 @@ function CoversPageContent() {
           {songs.length} song{songs.length === 1 ? "" : "s"}:
         </span>
         {statusCounts.map((s) => (
-          <span key={s.value}>
-            {s.emoji}
+          <span key={s.value} className="inline-flex items-center gap-1">
+            <span className="h-2.5 w-2.5 rounded-full" style={{ background: s.color }} aria-hidden />
             {s.count}
           </span>
         ))}
