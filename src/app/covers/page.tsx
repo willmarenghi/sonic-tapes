@@ -13,6 +13,7 @@ type CoverSong = {
   title: string;
   status: CoverStatus;
   added_by: string | null;
+  created_at: string;
 };
 
 const STATUSES: { value: CoverStatus; color: string; label: string }[] = [
@@ -23,7 +24,7 @@ const STATUSES: { value: CoverStatus; color: string; label: string }[] = [
 
 const STATUS_ORDER: Record<CoverStatus, number> = { not_started: 0, partial: 1, ready: 2 };
 
-type SortMode = "alpha" | "status";
+type SortMode = "alpha" | "status" | "date";
 
 function splitTitleArtist(title: string): { songTitle: string; artist: string | null } {
   const separatorIndex = title.indexOf(" - ");
@@ -71,7 +72,6 @@ function StatusDots({
 function CoversPageContent() {
   const [songs, setSongs] = useState<CoverSong[] | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [songTitle, setSongTitle] = useState("");
   const [artist, setArtist] = useState("");
   const [adding, setAdding] = useState(false);
@@ -87,18 +87,12 @@ function CoversPageContent() {
         {
           data: { user },
         },
-        { data: profiles },
         { data: covers },
       ] = await Promise.all([
         supabase.auth.getUser(),
-        supabase.from("profiles").select("id, is_admin"),
         supabase.from("cover_songs").select("*").order("created_at", { ascending: true }),
       ]);
       setCurrentUserId(user?.id ?? null);
-      setIsAdmin(
-        !!(profiles as { id: string; is_admin: boolean }[] | null)?.find((p) => p.id === user?.id)
-          ?.is_admin
-      );
       setSongs((covers as CoverSong[]) ?? []);
     }
 
@@ -171,11 +165,11 @@ function CoversPageContent() {
     return <p className="text-muted">Loading…</p>;
   }
 
-  const sortedSongs = [...songs].sort((a, b) =>
-    sortMode === "alpha"
-      ? a.title.localeCompare(b.title)
-      : STATUS_ORDER[a.status] - STATUS_ORDER[b.status]
-  );
+  const sortedSongs = [...songs].sort((a, b) => {
+    if (sortMode === "alpha") return a.title.localeCompare(b.title);
+    if (sortMode === "date") return b.created_at.localeCompare(a.created_at);
+    return STATUS_ORDER[a.status] - STATUS_ORDER[b.status];
+  });
 
   return (
     <div>
@@ -261,6 +255,17 @@ function CoversPageContent() {
               >
                 by status
               </button>
+              <button
+                type="button"
+                onClick={() => setSortMode("date")}
+                className={`min-h-9 px-3 text-xs lowercase transition ${
+                  sortMode === "date"
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted hover:text-foreground"
+                }`}
+              >
+                date added
+              </button>
             </div>
           </div>
 
@@ -278,15 +283,13 @@ function CoversPageContent() {
                   </div>
                   <div className="flex shrink-0 items-center gap-4">
                     <StatusDots song={song} onChange={handleStatusChange} />
-                    {(song.added_by === currentUserId || isAdmin) && (
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(song.id)}
-                        className="text-xs text-red-400 hover:underline"
-                      >
-                        Remove
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(song.id)}
+                      className="text-xs text-red-400 hover:underline"
+                    >
+                      Remove
+                    </button>
                   </div>
                 </li>
               );
