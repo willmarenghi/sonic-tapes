@@ -56,8 +56,8 @@ function StatusGauge({
 }) {
   const current = statusInfo(song.status);
   return (
-    <div className="flex items-center gap-2">
-      <span className="w-20 shrink-0 text-xs lowercase text-muted">{current.label}</span>
+    <div className="flex flex-col items-start gap-1 md:flex-row md:items-center md:gap-2">
+      <span className="text-xs lowercase text-muted md:w-20 md:shrink-0">{current.label}</span>
       <div className="relative h-2.5 w-24 shrink-0 overflow-hidden rounded-full bg-line">
         <div
           className="absolute inset-y-0 left-0 rounded-full transition-all"
