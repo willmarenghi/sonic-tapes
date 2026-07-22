@@ -135,6 +135,8 @@ function ShowsPageContent() {
   const [songKind, setSongKind] = useState<Record<string, ShowSongKind>>({});
   const [songTitleDraft, setSongTitleDraft] = useState<Record<string, string>>({});
   const [songCoverDraft, setSongCoverDraft] = useState<Record<string, string>>({});
+  const [songCoverQuery, setSongCoverQuery] = useState<Record<string, string>>({});
+  const [openSuggestionsFor, setOpenSuggestionsFor] = useState<string | null>(null);
   const [addingSongFor, setAddingSongFor] = useState<string | null>(null);
 
   const [dragState, setDragState] = useState<DragState>(null);
@@ -156,7 +158,11 @@ function ShowsPageContent() {
         { data: coverSongsData },
       ] = await Promise.all([
         supabase.auth.getUser(),
-        supabase.from("shows").select("*").order("show_date", { ascending: true }),
+        supabase
+          .from("shows")
+          .select("*")
+          .order("show_date", { ascending: true })
+          .order("show_time", { ascending: true }),
         supabase
           .from("show_songs")
           .select("*")
@@ -270,7 +276,7 @@ function ShowsPageContent() {
 
   async function handleAddSong(showId: string) {
     if (!currentUserId) return;
-    const kind = songKind[showId] ?? "original";
+    const kind = songKind[showId] ?? "cover";
 
     let title = "";
     let coverSongId: string | null = null;
@@ -307,6 +313,7 @@ function ShowsPageContent() {
     }
     setSongTitleDraft((prev) => ({ ...prev, [showId]: "" }));
     setSongCoverDraft((prev) => ({ ...prev, [showId]: "" }));
+    setSongCoverQuery((prev) => ({ ...prev, [showId]: "" }));
     setReloadKey((k) => k + 1);
   }
 
@@ -337,32 +344,44 @@ function ShowsPageContent() {
         {shows.length} show{shows.length === 1 ? "" : "s"} on the books.
       </p>
 
-      <form onSubmit={handleAddShow} className="mb-6 flex flex-wrap gap-3">
-        <input
-          type="date"
-          required
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          className="min-w-0 rounded-md border border-line bg-surface px-3 py-2 text-base text-foreground outline-none focus:border-accent"
-        />
-        <input
-          type="time"
-          value={time}
-          onChange={(e) => setTime(e.target.value)}
-          className="min-w-0 rounded-md border border-line bg-surface px-3 py-2 text-base text-foreground outline-none focus:border-accent"
-        />
-        <input
-          type="text"
-          required
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-          placeholder="venue / location"
-          className="min-w-0 flex-1 rounded-md border border-line bg-surface px-3 py-2 text-base text-foreground outline-none placeholder:text-muted focus:border-accent"
-        />
+      <form
+        onSubmit={handleAddShow}
+        className="mb-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end"
+      >
+        <label className="flex flex-col gap-1 text-xs lowercase text-muted">
+          date
+          <input
+            type="date"
+            required
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="w-full rounded-md border border-line bg-surface px-3 py-2 text-base text-foreground outline-none focus:border-accent sm:w-auto"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-xs lowercase text-muted">
+          time
+          <input
+            type="time"
+            value={time}
+            onChange={(e) => setTime(e.target.value)}
+            className="w-full rounded-md border border-line bg-surface px-3 py-2 text-base text-foreground outline-none focus:border-accent sm:w-auto"
+          />
+        </label>
+        <label className="flex flex-1 flex-col gap-1 text-xs lowercase text-muted">
+          venue
+          <input
+            type="text"
+            required
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            placeholder="venue / location"
+            className="w-full rounded-md border border-line bg-surface px-3 py-2 text-base text-foreground outline-none placeholder:text-muted focus:border-accent"
+          />
+        </label>
         <button
           type="submit"
           disabled={adding}
-          className="min-h-11 shrink-0 rounded-md bg-accent px-4 text-sm font-medium lowercase text-accent-foreground transition hover:brightness-110 disabled:opacity-60"
+          className="min-h-11 w-full shrink-0 rounded-md bg-accent px-4 text-sm font-medium lowercase text-accent-foreground transition hover:brightness-110 disabled:opacity-60 sm:w-auto"
         >
           {adding ? "Adding…" : "Add"}
         </button>
@@ -378,11 +397,11 @@ function ShowsPageContent() {
             const songsForShow = showSongs.filter((s) => s.show_id === show.id);
             const displaySongs = dragState?.showId === show.id ? dragState.songs : songsForShow;
             const isExpanded = !!expanded[show.id];
-            const kind = songKind[show.id] ?? "original";
+            const kind = songKind[show.id] ?? "cover";
             const time = formatShowTime(show.show_time);
 
             return (
-              <li key={show.id} className="rounded-lg border-2 border-line bg-surface px-4 py-3">
+              <li key={show.id} className="rounded-lg border-2 border-accent bg-surface px-4 py-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-foreground">{show.location}</p>
@@ -435,17 +454,6 @@ function ShowsPageContent() {
                       <div className="flex shrink-0 overflow-hidden rounded-md border border-line">
                         <button
                           type="button"
-                          onClick={() => setSongKind((prev) => ({ ...prev, [show.id]: "original" }))}
-                          className={`min-h-9 px-3 text-xs lowercase transition ${
-                            kind === "original"
-                              ? "bg-accent text-accent-foreground"
-                              : "text-muted hover:text-foreground"
-                          }`}
-                        >
-                          original
-                        </button>
-                        <button
-                          type="button"
                           onClick={() => setSongKind((prev) => ({ ...prev, [show.id]: "cover" }))}
                           className={`min-h-9 px-3 text-xs lowercase transition ${
                             kind === "cover"
@@ -454,6 +462,17 @@ function ShowsPageContent() {
                           }`}
                         >
                           cover
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSongKind((prev) => ({ ...prev, [show.id]: "original" }))}
+                          className={`min-h-9 px-3 text-xs lowercase transition ${
+                            kind === "original"
+                              ? "bg-accent text-accent-foreground"
+                              : "text-muted hover:text-foreground"
+                          }`}
+                        >
+                          original
                         </button>
                       </div>
 
@@ -468,20 +487,54 @@ function ShowsPageContent() {
                           className="min-w-0 flex-1 rounded-md border border-line bg-surface px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted focus:border-accent"
                         />
                       ) : (
-                        <select
-                          value={songCoverDraft[show.id] ?? ""}
-                          onChange={(e) =>
-                            setSongCoverDraft((prev) => ({ ...prev, [show.id]: e.target.value }))
-                          }
-                          className="min-w-0 flex-1 rounded-md border border-line bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
-                        >
-                          <option value="">choose a cover song…</option>
-                          {coverSongs.map((c) => (
-                            <option key={c.id} value={c.id}>
-                              {c.title}
-                            </option>
-                          ))}
-                        </select>
+                        <div className="relative min-w-0 flex-1">
+                          <input
+                            type="text"
+                            value={songCoverQuery[show.id] ?? ""}
+                            onChange={(e) => {
+                              const query = e.target.value;
+                              setSongCoverQuery((prev) => ({ ...prev, [show.id]: query }));
+                              setSongCoverDraft((prev) => ({ ...prev, [show.id]: "" }));
+                            }}
+                            onFocus={() => setOpenSuggestionsFor(show.id)}
+                            onBlur={() =>
+                              setOpenSuggestionsFor((current) => (current === show.id ? null : current))
+                            }
+                            placeholder="search cover songs…"
+                            className="w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted focus:border-accent"
+                          />
+                          {openSuggestionsFor === show.id &&
+                            (() => {
+                              const query = (songCoverQuery[show.id] ?? "").trim().toLowerCase();
+                              const matches = coverSongs
+                                .filter((c) => c.title.toLowerCase().includes(query))
+                                .slice(0, 8);
+                              return (
+                                <ul className="absolute inset-x-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-md border border-line bg-surface shadow-lg shadow-black/30">
+                                  {matches.length === 0 ? (
+                                    <li className="px-3 py-2 text-sm text-muted">no matches</li>
+                                  ) : (
+                                    matches.map((c) => (
+                                      <li key={c.id}>
+                                        <button
+                                          type="button"
+                                          onMouseDown={(e) => e.preventDefault()}
+                                          onClick={() => {
+                                            setSongCoverDraft((prev) => ({ ...prev, [show.id]: c.id }));
+                                            setSongCoverQuery((prev) => ({ ...prev, [show.id]: c.title }));
+                                            setOpenSuggestionsFor(null);
+                                          }}
+                                          className="block w-full px-3 py-2 text-left text-sm text-foreground hover:bg-line"
+                                        >
+                                          {c.title}
+                                        </button>
+                                      </li>
+                                    ))
+                                  )}
+                                </ul>
+                              );
+                            })()}
+                        </div>
                       )}
 
                       <button
