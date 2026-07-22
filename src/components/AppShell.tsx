@@ -76,8 +76,11 @@ function BandRoster({
   onSelectUser,
 }: {
   selectedUserId: string | null;
-  onSelectUser: (id: string | null) => void;
+  onSelectUser?: (id: string | null) => void;
 }) {
+  const router = useRouter();
+  const selectUser = onSelectUser ?? (() => router.push("/"));
+
   const members = useBandMembers();
   const blanks = Math.max(0, BAND_SIZE - members.length);
 
@@ -87,7 +90,7 @@ function BandRoster({
       <div className="mt-4 flex flex-col gap-2">
         <button
           type="button"
-          onClick={() => onSelectUser(null)}
+          onClick={() => selectUser(null)}
           className={`flex min-h-11 items-center gap-3 rounded-md px-1 text-base lowercase transition ${
             selectedUserId === null ? "text-foreground" : "text-muted hover:text-foreground"
           }`}
@@ -105,7 +108,7 @@ function BandRoster({
           <button
             key={member.id}
             type="button"
-            onClick={() => onSelectUser(member.id)}
+            onClick={() => selectUser(member.id)}
             className={`flex min-h-11 items-center gap-3 rounded-md px-1 text-base lowercase transition ${
               selectedUserId === member.id ? "text-foreground" : "text-muted hover:text-foreground"
             }`}
@@ -166,22 +169,10 @@ function SidebarContent({
         + new idea
       </Link>
 
-      {onSelectUser && (
-        <BandRoster
-          selectedUserId={selectedUserId}
-          onSelectUser={(id) => {
-            onSelectUser(id);
-            onNavigate?.();
-          }}
-        />
-      )}
-
-      <div className="flex-1" />
-
       <Link
         href="/covers"
         onClick={onNavigate}
-        className="mb-4 flex min-h-11 items-center justify-center rounded-md border px-3 text-sm lowercase transition hover:brightness-110"
+        className="mt-4 flex min-h-11 items-center justify-center rounded-md border px-3 text-sm lowercase transition hover:brightness-110"
         style={{
           borderColor: "#6fbf73",
           color: "#a8d6ad",
@@ -190,6 +181,19 @@ function SidebarContent({
       >
         cover songs
       </Link>
+
+      <BandRoster
+        selectedUserId={selectedUserId}
+        onSelectUser={
+          onSelectUser &&
+          ((id) => {
+            onSelectUser(id);
+            onNavigate?.();
+          })
+        }
+      />
+
+      <div className="flex-1" />
 
       <div className="border-t border-dashed border-line-dashed pt-4">
         <p className="truncate text-sm text-muted">{label}</p>
