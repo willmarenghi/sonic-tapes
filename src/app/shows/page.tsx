@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { RequireAuth } from "@/components/RequireAuth";
@@ -25,8 +25,24 @@ type ShowSong = {
   kind: ShowSongKind;
   title: string;
   cover_song_id: string | null;
+  position: number;
   created_at: string;
 };
+
+type DragState = { showId: string; songs: ShowSong[]; draggingId: string } | null;
+
+function GripIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-4 w-4 shrink-0" fill="currentColor" aria-hidden>
+      <circle cx="5" cy="3" r="1.3" />
+      <circle cx="11" cy="3" r="1.3" />
+      <circle cx="5" cy="8" r="1.3" />
+      <circle cx="11" cy="8" r="1.3" />
+      <circle cx="5" cy="13" r="1.3" />
+      <circle cx="11" cy="13" r="1.3" />
+    </svg>
+  );
+}
 
 function formatShowDate(dateStr: string) {
   const [y, m, d] = dateStr.split("-").map(Number);
@@ -57,14 +73,29 @@ function SetlistSong({
   song,
   coverSong,
   onRemove,
+  onDragStart,
+  isDragging,
 }: {
   song: ShowSong;
   coverSong: CoverSong | null;
   onRemove: (id: string) => void;
+  onDragStart: (songId: string) => void;
+  isDragging: boolean;
 }) {
   const { songTitle, artist } = splitTitleArtist(song.title);
   return (
-    <li className="flex items-center justify-between gap-3 py-2">
+    <li
+      data-song-row={song.id}
+      className={`flex items-center gap-3 py-2 transition-opacity ${isDragging ? "opacity-40" : ""}`}
+    >
+      <button
+        type="button"
+        onPointerDown={() => onDragStart(song.id)}
+        aria-label="Drag to reorder"
+        className="shrink-0 cursor-grab touch-none text-muted active:cursor-grabbing"
+      >
+        <GripIcon />
+      </button>
       <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-1.5">
         <span className="text-foreground">{songTitle}</span>
         {artist && <span className="whitespace-nowrap text-muted">- {artist}</span>}
@@ -106,6 +137,12 @@ function ShowsPageContent() {
   const [songCoverDraft, setSongCoverDraft] = useState<Record<string, string>>({});
   const [addingSongFor, setAddingSongFor] = useState<string | null>(null);
 
+  const [dragState, setDragState] = useState<DragState>(null);
+  const dragStateRef = useRef<DragState>(null);
+  useEffect(() => {
+    dragStateRef.current = dragState;
+  }, [dragState]);
+
   useEffect(() => {
     const supabase = createClient();
 
@@ -120,7 +157,11 @@ function ShowsPageContent() {
       ] = await Promise.all([
         supabase.auth.getUser(),
         supabase.from("shows").select("*").order("show_date", { ascending: true }),
-        supabase.from("show_songs").select("*").order("created_at", { ascending: true }),
+        supabase
+          .from("show_songs")
+          .select("*")
+          .order("position", { ascending: true })
+          .order("created_at", { ascending: true }),
         supabase.from("cover_songs").select("*"),
       ]);
       setCurrentUserId(user?.id ?? null);
@@ -131,6 +172,58 @@ function ShowsPageContent() {
 
     load();
   }, [reloadKey]);
+
+  // Drag-to-reorder: pointer events (not HTML5 drag/drop) so this works on
+  // touch as well as mouse. While a drag is active we track the live
+  // reordering in `dragState` and only commit it to Supabase on release.
+  useEffect(() => {
+    if (!dragState) return;
+
+    function handlePointerMove(e: PointerEvent) {
+      const current = dragStateRef.current;
+      if (!current) return;
+      const target = document.elementFromPoint(e.clientX, e.clientY);
+      const row = target?.closest("[data-song-row]");
+      const overId = row instanceof HTMLElement ? row.dataset.songRow : undefined;
+      if (!overId || overId === current.draggingId) return;
+
+      const fromIndex = current.songs.findIndex((s) => s.id === current.draggingId);
+      const toIndex = current.songs.findIndex((s) => s.id === overId);
+      if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) return;
+
+      const reordered = [...current.songs];
+      const [moved] = reordered.splice(fromIndex, 1);
+      reordered.splice(toIndex, 0, moved);
+      setDragState({ ...current, songs: reordered });
+    }
+
+    async function handlePointerUp() {
+      const current = dragStateRef.current;
+      setDragState(null);
+      if (!current) return;
+
+      const supabase = createClient();
+      const results = await Promise.all(
+        current.songs.map((s, i) => supabase.from("show_songs").update({ position: i }).eq("id", s.id))
+      );
+      const failed = results.find((r) => r.error);
+      if (failed?.error) {
+        setError(errorMessage(failed.error));
+      }
+      setReloadKey((k) => k + 1);
+    }
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+    };
+  }, [dragState !== null]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function startDrag(showId: string, songs: ShowSong[], songId: string) {
+    setDragState({ showId, songs: [...songs], draggingId: songId });
+  }
 
   async function handleAddShow(e: React.FormEvent) {
     e.preventDefault();
@@ -196,12 +289,14 @@ function ShowsPageContent() {
     setAddingSongFor(showId);
     setError(null);
 
+    const position = showSongs.filter((s) => s.show_id === showId).length;
     const supabase = createClient();
     const { error } = await supabase.from("show_songs").insert({
       show_id: showId,
       kind,
       title,
       cover_song_id: coverSongId,
+      position,
       added_by: currentUserId,
     });
 
@@ -281,6 +376,7 @@ function ShowsPageContent() {
         <ul className="space-y-2">
           {shows.map((show) => {
             const songsForShow = showSongs.filter((s) => s.show_id === show.id);
+            const displaySongs = dragState?.showId === show.id ? dragState.songs : songsForShow;
             const isExpanded = !!expanded[show.id];
             const kind = songKind[show.id] ?? "original";
             const time = formatShowTime(show.show_time);
@@ -316,9 +412,9 @@ function ShowsPageContent() {
 
                 {isExpanded && (
                   <div className="mt-2">
-                    {songsForShow.length > 0 && (
+                    {displaySongs.length > 0 && (
                       <ul className="divide-y divide-line">
-                        {songsForShow.map((song) => (
+                        {displaySongs.map((song) => (
                           <SetlistSong
                             key={song.id}
                             song={song}
@@ -328,6 +424,8 @@ function ShowsPageContent() {
                                 : null
                             }
                             onRemove={handleRemoveSong}
+                            onDragStart={(songId) => startDrag(show.id, songsForShow, songId)}
+                            isDragging={dragState?.draggingId === song.id}
                           />
                         ))}
                       </ul>

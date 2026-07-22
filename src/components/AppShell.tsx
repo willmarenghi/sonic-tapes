@@ -161,39 +161,41 @@ function SidebarContent({
         song library for thoughts, feedback, and innovation
       </p>
 
-      <Link
-        href="/upload"
-        onClick={onNavigate}
-        className="mt-6 flex min-h-11 items-center justify-center rounded-md bg-accent text-sm font-medium lowercase text-accent-foreground transition hover:brightness-110"
-      >
-        + new idea
-      </Link>
+      <div className="mt-6 flex flex-col gap-3">
+        <Link
+          href="/upload"
+          onClick={onNavigate}
+          className="flex min-h-11 items-center justify-center rounded-md bg-accent text-sm font-medium lowercase text-accent-foreground transition hover:brightness-110"
+        >
+          + new idea
+        </Link>
 
-      <Link
-        href="/covers"
-        onClick={onNavigate}
-        className="mt-4 flex min-h-11 items-center justify-center rounded-md border px-3 text-sm lowercase transition hover:brightness-110"
-        style={{
-          borderColor: "#6fbf73",
-          color: "#a8d6ad",
-          background: "rgba(111, 191, 115, 0.08)",
-        }}
-      >
-        cover songs
-      </Link>
+        <Link
+          href="/covers"
+          onClick={onNavigate}
+          className="flex min-h-11 items-center justify-center rounded-md border px-3 text-sm lowercase transition hover:brightness-110"
+          style={{
+            borderColor: "#6fbf73",
+            color: "#a8d6ad",
+            background: "rgba(111, 191, 115, 0.08)",
+          }}
+        >
+          cover songs
+        </Link>
 
-      <Link
-        href="/shows"
-        onClick={onNavigate}
-        className="mt-2 flex min-h-11 items-center justify-center rounded-md border px-3 text-sm lowercase transition hover:brightness-110"
-        style={{
-          borderColor: "#e15c4f",
-          color: "#f0a098",
-          background: "rgba(225, 92, 79, 0.08)",
-        }}
-      >
-        shows
-      </Link>
+        <Link
+          href="/shows"
+          onClick={onNavigate}
+          className="flex min-h-11 items-center justify-center rounded-md border px-3 text-sm lowercase transition hover:brightness-110"
+          style={{
+            borderColor: "#e15c4f",
+            color: "#f0a098",
+            background: "rgba(225, 92, 79, 0.08)",
+          }}
+        >
+          shows
+        </Link>
+      </div>
 
       <BandRoster
         selectedUserId={selectedUserId}
