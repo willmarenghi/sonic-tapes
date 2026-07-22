@@ -386,7 +386,7 @@ function ShowsPageContent() {
         className="mb-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end"
       >
         <div className="flex gap-3">
-          <label className="flex min-w-0 flex-1 flex-col gap-1 overflow-hidden text-xs lowercase text-muted sm:w-[9.5rem] sm:flex-none">
+          <label className="flex min-w-0 flex-1 flex-col gap-1 text-xs lowercase text-muted sm:w-[9.5rem] sm:flex-none">
             date
             <input
               type="date"
@@ -396,7 +396,7 @@ function ShowsPageContent() {
               className="w-full min-w-0 rounded-md border border-line bg-surface px-2 py-2 text-sm text-foreground outline-none focus:border-accent"
             />
           </label>
-          <label className="flex min-w-0 flex-1 flex-col gap-1 overflow-hidden text-xs lowercase text-muted sm:w-[7.5rem] sm:flex-none">
+          <label className="flex min-w-0 flex-1 flex-col gap-1 text-xs lowercase text-muted sm:w-[7.5rem] sm:flex-none">
             time
             <input
               type="time"
