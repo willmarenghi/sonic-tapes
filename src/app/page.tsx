@@ -65,7 +65,7 @@ export default function HomePage() {
               />
               <HubTile
                 href="/shows"
-                label="shows"
+                label="shows / setlists"
                 borderColor="#e15c4f"
                 color="#f0a098"
                 background="rgba(225, 92, 79, 0.08)"

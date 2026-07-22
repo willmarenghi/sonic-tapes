@@ -206,7 +206,7 @@ function SidebarContent({
             background: "rgba(225, 92, 79, 0.08)",
           }}
         >
-          shows
+          shows / setlists
         </Link>
       </div>
 

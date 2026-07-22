@@ -33,7 +33,7 @@ function CoversPageContent() {
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
-  const [sortMode, setSortMode] = useState<SortMode>("status");
+  const [sortMode, setSortMode] = useState<SortMode>("date");
 
   useEffect(() => {
     const supabase = createClient();
@@ -191,14 +191,14 @@ function CoversPageContent() {
             <div className="flex shrink-0 overflow-hidden rounded-md border border-line">
               <button
                 type="button"
-                onClick={() => setSortMode("alpha")}
+                onClick={() => setSortMode("date")}
                 className={`min-h-9 px-3 text-xs lowercase transition ${
-                  sortMode === "alpha"
+                  sortMode === "date"
                     ? "bg-accent text-accent-foreground"
                     : "text-muted hover:text-foreground"
                 }`}
               >
-                a–z
+                date added
               </button>
               <button
                 type="button"
@@ -213,14 +213,14 @@ function CoversPageContent() {
               </button>
               <button
                 type="button"
-                onClick={() => setSortMode("date")}
+                onClick={() => setSortMode("alpha")}
                 className={`min-h-9 px-3 text-xs lowercase transition ${
-                  sortMode === "date"
+                  sortMode === "alpha"
                     ? "bg-accent text-accent-foreground"
                     : "text-muted hover:text-foreground"
                 }`}
               >
-                date added
+                a–z
               </button>
             </div>
           </div>

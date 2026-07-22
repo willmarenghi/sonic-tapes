@@ -241,6 +241,9 @@ export default function FeedPage() {
   return (
     <RequireAuth>
       <AppShell selectedUserId={selectedUserId} onSelectUser={setSelectedUserId}>
+        <Link href="/" className="mb-4 inline-block text-sm font-medium text-accent hover:underline">
+          ← back home
+        </Link>
         <Feed selectedUserId={selectedUserId} />
       </AppShell>
     </RequireAuth>
