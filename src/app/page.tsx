@@ -29,7 +29,7 @@ function Feed({ selectedUserId }: { selectedUserId: string | null }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [query, setQuery] = useState("");
-  const [viewMode, setViewMode] = useState<"list" | "shelf">("list");
+  const [viewMode, setViewMode] = useState<"list" | "shelf">("shelf");
   const [selectedShelfThreadId, setSelectedShelfThreadId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -105,21 +105,21 @@ function Feed({ selectedUserId }: { selectedUserId: string | null }) {
           <div className="flex shrink-0 overflow-hidden rounded-md border border-line">
             <button
               type="button"
-              onClick={() => setViewMode("list")}
-              className={`min-h-11 px-3 text-sm lowercase transition ${
-                viewMode === "list" ? "bg-accent text-accent-foreground" : "text-muted hover:text-foreground"
-              }`}
-            >
-              list
-            </button>
-            <button
-              type="button"
               onClick={() => setViewMode("shelf")}
               className={`min-h-11 px-3 text-sm lowercase transition ${
                 viewMode === "shelf" ? "bg-accent text-accent-foreground" : "text-muted hover:text-foreground"
               }`}
             >
               shelf
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("list")}
+              className={`min-h-11 px-3 text-sm lowercase transition ${
+                viewMode === "list" ? "bg-accent text-accent-foreground" : "text-muted hover:text-foreground"
+              }`}
+            >
+              list
             </button>
           </div>
         </div>

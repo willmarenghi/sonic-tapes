@@ -192,10 +192,10 @@ function CoversPageContent() {
 
       <h1 className="mb-1 font-display text-2xl lowercase text-foreground">cover songs</h1>
       <p className="mb-6 text-sm text-muted">
-        songs the band wants to learn, and how far along we are on each one.
+        {songs.length} song{songs.length === 1 ? "" : "s"}
       </p>
 
-      <form onSubmit={handleAdd} className="flex flex-wrap gap-3">
+      <form onSubmit={handleAdd} className="mb-6 flex flex-wrap gap-3">
         <input
           type="text"
           required
@@ -220,19 +220,6 @@ function CoversPageContent() {
           {adding ? "Adding…" : "Add"}
         </button>
       </form>
-
-      <div className="mt-3 mb-6 flex flex-wrap items-center gap-4 text-xs text-muted">
-        {STATUSES.map((s) => (
-          <span key={s.value} className="flex items-center gap-1.5">
-            <span
-              className="h-2.5 w-2.5 rounded-full"
-              style={{ background: s.color }}
-              aria-hidden
-            />
-            {s.label}
-          </span>
-        ))}
-      </div>
 
       {error && <p className="mb-4 text-sm text-red-400">{error}</p>}
 
