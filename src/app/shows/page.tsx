@@ -613,9 +613,9 @@ function ShowsPageContent() {
                           {openSuggestionsFor === show.id &&
                             (() => {
                               const query = (songCoverQuery[show.id] ?? "").trim().toLowerCase();
-                              const matches = coverSongs
-                                .filter((c) => c.title.toLowerCase().includes(query))
-                                .slice(0, 8);
+                              const matches = coverSongs.filter((c) =>
+                                c.title.toLowerCase().includes(query)
+                              );
                               return (
                                 <ul className="absolute inset-x-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-md border border-line bg-surface shadow-lg shadow-black/30">
                                   {matches.length === 0 ? (
