@@ -294,7 +294,7 @@ export function UploadForm({
       </div>
 
       <div>
-        <label htmlFor="notes" className="mb-1 block text-sm text-[#a7c2ec]">
+        <label htmlFor="notes" className="mb-1 block text-sm text-muted">
           Notes (chords, description, etc.)
         </label>
         <div className="mb-2 flex flex-wrap gap-2">
