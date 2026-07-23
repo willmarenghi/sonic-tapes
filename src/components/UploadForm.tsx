@@ -14,7 +14,6 @@ const QUICK_TAGS = [
   "riff",
   "full song",
   "lyrics only",
-  "demo",
   "guitar only",
   "vocals only",
   "chorus only",
