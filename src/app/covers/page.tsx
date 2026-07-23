@@ -17,6 +17,13 @@ import {
 
 type SortMode = "alpha" | "status" | "date";
 
+type Show = {
+  id: string;
+  show_date: string;
+  show_time: string | null;
+  location: string;
+};
+
 function errorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
   if (err && typeof err === "object" && "message" in err && typeof err.message === "string") {
@@ -25,8 +32,26 @@ function errorMessage(err: unknown): string {
   return "Something went wrong.";
 }
 
+function formatShowDate(dateStr: string) {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function formatShowTime(timeStr: string | null) {
+  if (!timeStr) return null;
+  const [h, m] = timeStr.split(":").map(Number);
+  const period = h >= 12 ? "PM" : "AM";
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  return `${hour12}:${String(m).padStart(2, "0")} ${period}`;
+}
+
 function CoversPageContent() {
   const [songs, setSongs] = useState<CoverSong[] | null>(null);
+  const [shows, setShows] = useState<Show[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [songTitle, setSongTitle] = useState("");
   const [artist, setArtist] = useState("");
@@ -34,6 +59,15 @@ function CoversPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [sortMode, setSortMode] = useState<SortMode>("date");
+
+  const [addToSetlistFor, setAddToSetlistFor] = useState<CoverSong | null>(null);
+  const [newSetlistMode, setNewSetlistMode] = useState(false);
+  const [addingToShowId, setAddingToShowId] = useState<string | null>(null);
+  const [creatingSetlist, setCreatingSetlist] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
+  const [newDate, setNewDate] = useState("");
+  const [newTime, setNewTime] = useState("");
+  const [newLocation, setNewLocation] = useState("");
 
   useEffect(() => {
     const supabase = createClient();
@@ -44,12 +78,19 @@ function CoversPageContent() {
           data: { user },
         },
         { data: covers },
+        { data: showsData },
       ] = await Promise.all([
         supabase.auth.getUser(),
         supabase.from("cover_songs").select("*").order("created_at", { ascending: true }),
+        supabase
+          .from("shows")
+          .select("*")
+          .order("show_date", { ascending: true })
+          .order("show_time", { ascending: true }),
       ]);
       setCurrentUserId(user?.id ?? null);
       setSongs((covers as CoverSong[]) ?? []);
+      setShows((showsData as Show[]) ?? []);
     }
 
     load();
@@ -115,6 +156,89 @@ function CoversPageContent() {
       return;
     }
     setReloadKey((k) => k + 1);
+  }
+
+  function openAddToSetlist(song: CoverSong) {
+    setAddToSetlistFor(song);
+    setNewSetlistMode(false);
+    setModalError(null);
+    setNewDate("");
+    setNewTime("");
+    setNewLocation("");
+  }
+
+  function closeAddToSetlist() {
+    setAddToSetlistFor(null);
+    setNewSetlistMode(false);
+  }
+
+  async function addCoverToShow(showId: string, cover: CoverSong) {
+    const supabase = createClient();
+    const { count, error: countError } = await supabase
+      .from("show_songs")
+      .select("id", { count: "exact", head: true })
+      .eq("show_id", showId);
+
+    if (countError) {
+      setModalError(errorMessage(countError));
+      return false;
+    }
+
+    const { error } = await supabase.from("show_songs").insert({
+      show_id: showId,
+      kind: "cover",
+      title: cover.title,
+      cover_song_id: cover.id,
+      position: count ?? 0,
+      added_by: currentUserId,
+    });
+
+    if (error) {
+      setModalError(errorMessage(error));
+      return false;
+    }
+    return true;
+  }
+
+  async function handleAddToExistingShow(showId: string) {
+    if (!addToSetlistFor) return;
+    setModalError(null);
+    setAddingToShowId(showId);
+    const ok = await addCoverToShow(showId, addToSetlistFor);
+    setAddingToShowId(null);
+    if (ok) closeAddToSetlist();
+  }
+
+  async function handleCreateSetlistAndAdd(e: React.FormEvent) {
+    e.preventDefault();
+    if (!addToSetlistFor || !currentUserId) return;
+    setCreatingSetlist(true);
+    setModalError(null);
+
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("shows")
+      .insert({
+        show_date: newDate,
+        show_time: newTime || null,
+        location: newLocation.trim(),
+        added_by: currentUserId,
+      })
+      .select()
+      .single();
+
+    if (error || !data) {
+      setCreatingSetlist(false);
+      setModalError(errorMessage(error ?? new Error("Could not create the setlist.")));
+      return;
+    }
+
+    const ok = await addCoverToShow(data.id, addToSetlistFor);
+    setCreatingSetlist(false);
+    if (ok) {
+      setReloadKey((k) => k + 1);
+      closeAddToSetlist();
+    }
   }
 
   if (songs === null) {
@@ -230,7 +354,16 @@ function CoversPageContent() {
               const { songTitle, artist } = splitTitleArtist(song.title);
               return (
                 <li key={song.id} className="overflow-hidden rounded-lg border-2 border-line">
-                  <SwipeActions actions={[{ label: "Remove", onClick: () => handleDelete(song.id) }]}>
+                  <SwipeActions
+                    actions={[
+                      {
+                        label: "Setlist",
+                        onClick: () => openAddToSetlist(song),
+                        className: "bg-accent text-accent-foreground",
+                      },
+                      { label: "Remove", onClick: () => handleDelete(song.id) },
+                    ]}
+                  >
                     <div className="flex items-center justify-between gap-3 px-4 py-3">
                       <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-1.5">
                         <span className="text-foreground">{songTitle}</span>
@@ -249,6 +382,122 @@ function CoversPageContent() {
             })}
           </ul>
         </>
+      )}
+
+      {addToSetlistFor && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 sm:items-center"
+          onClick={closeAddToSetlist}
+        >
+          <div
+            className="w-full max-w-sm rounded-lg border border-line bg-surface p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h2 className="min-w-0 truncate font-display text-lg lowercase text-foreground">
+                add “{splitTitleArtist(addToSetlistFor.title).songTitle}” to a setlist
+              </h2>
+              <button
+                type="button"
+                onClick={closeAddToSetlist}
+                aria-label="Close"
+                className="shrink-0 text-muted hover:text-foreground"
+              >
+                ✕
+              </button>
+            </div>
+
+            {modalError && <p className="mb-3 text-sm text-red-400">{modalError}</p>}
+
+            {newSetlistMode ? (
+              <form onSubmit={handleCreateSetlistAndAdd} className="flex flex-col gap-3">
+                <div className="flex gap-3">
+                  <label className="flex w-[calc(50%-0.375rem)] min-w-0 flex-col gap-1 text-xs lowercase text-muted">
+                    date
+                    <input
+                      type="date"
+                      required
+                      value={newDate}
+                      onChange={(e) => setNewDate(e.target.value)}
+                      className="w-full min-w-0 rounded-md border border-line bg-surface px-2 py-2 text-sm text-foreground outline-none focus:border-accent"
+                    />
+                  </label>
+                  <label className="flex w-[calc(50%-0.375rem)] min-w-0 flex-col gap-1 text-xs lowercase text-muted">
+                    time
+                    <input
+                      type="time"
+                      value={newTime}
+                      onChange={(e) => setNewTime(e.target.value)}
+                      className="w-full min-w-0 rounded-md border border-line bg-surface px-2 py-2 text-sm text-foreground outline-none focus:border-accent"
+                    />
+                  </label>
+                </div>
+                <label className="flex min-w-0 flex-col gap-1 text-xs lowercase text-muted">
+                  venue
+                  <input
+                    type="text"
+                    required
+                    value={newLocation}
+                    onChange={(e) => setNewLocation(e.target.value)}
+                    placeholder="venue / location"
+                    className="w-full min-w-0 rounded-md border border-line bg-surface px-3 py-2 text-base text-foreground outline-none placeholder:text-muted focus:border-accent"
+                  />
+                </label>
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    disabled={creatingSetlist}
+                    className="min-h-10 flex-1 rounded-md bg-accent px-3 text-sm font-medium lowercase text-accent-foreground transition hover:brightness-110 disabled:opacity-60"
+                  >
+                    {creatingSetlist ? "Creating…" : "Create & add"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewSetlistMode(false)}
+                    className="min-h-10 rounded-md border border-line px-3 text-sm lowercase text-muted transition hover:text-foreground"
+                  >
+                    back
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setNewSetlistMode(true)}
+                  className="mb-3 w-full rounded-md border border-dashed border-line-dashed px-3 py-2 text-left text-sm text-accent transition hover:border-accent"
+                >
+                  + new setlist
+                </button>
+                <ul className="max-h-64 divide-y divide-line overflow-y-auto">
+                  {shows.length === 0 ? (
+                    <li className="py-2 text-sm text-muted">no setlists yet</li>
+                  ) : (
+                    shows.map((show) => {
+                      const time = formatShowTime(show.show_time);
+                      return (
+                        <li key={show.id}>
+                          <button
+                            type="button"
+                            disabled={addingToShowId === show.id}
+                            onClick={() => handleAddToExistingShow(show.id)}
+                            className="flex w-full items-center justify-between gap-3 py-2 text-left text-sm text-foreground transition hover:text-accent disabled:opacity-60"
+                          >
+                            <span className="min-w-0 truncate">{show.location}</span>
+                            <span className="shrink-0 text-xs text-muted">
+                              {formatShowDate(show.show_date)}
+                              {time && ` · ${time}`}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })
+                  )}
+                </ul>
+              </>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
