@@ -5,6 +5,18 @@ import { useEffect, useRef, useState } from "react";
 const ACTION_WIDTH = 72;
 const SWIPE_THRESHOLD = 8;
 
+// Registry of every mounted row's "close" callback, so starting a swipe on
+// one row can snap any other currently-open row shut — only the most
+// recently swiped row stays revealed.
+type CloseHandle = () => void;
+const openRows = new Set<CloseHandle>();
+
+function closeOtherRows(exceptSelf: CloseHandle) {
+  for (const close of openRows) {
+    if (close !== exceptSelf) close();
+  }
+}
+
 type DragInfo = {
   pointerId: number;
   startX: number;
@@ -37,6 +49,14 @@ export function SwipeActions({
   const justClosed = useRef(false);
   const [isDragging, setIsDragging] = useState(false);
 
+  const closeSelf = useRef<CloseHandle>(() => setOffset(0)).current;
+  useEffect(() => {
+    openRows.add(closeSelf);
+    return () => {
+      openRows.delete(closeSelf);
+    };
+  }, [closeSelf]);
+
   function handlePointerDown(e: React.PointerEvent) {
     drag.current = {
       pointerId: e.pointerId,
@@ -67,6 +87,7 @@ export function SwipeActions({
       if (!d.swiping) {
         if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dy) > Math.abs(dx)) return;
         d.swiping = true;
+        closeOtherRows(closeSelf);
       }
 
       setOffset(Math.min(0, Math.max(-revealWidth, d.startOffset + dx)));
