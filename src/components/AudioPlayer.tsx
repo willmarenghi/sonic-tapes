@@ -1,10 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import WaveSurfer from "wavesurfer.js";
 
 // Module-level so every AudioPlayer instance on the page can see what's
 // currently playing and pause it, without needing a shared context.
-let currentlyPlaying: HTMLAudioElement | null = null;
+let currentlyPlaying: WaveSurfer | null = null;
+
+// Matches --accent / --accent-foreground in globals.css. wavesurfer draws on
+// a <canvas>, whose fillStyle can't resolve CSS custom properties, so the
+// purple has to be hardcoded here rather than referenced via var(...).
+const WAVE_COLOR = "rgba(184, 169, 230, 0.35)";
+const PROGRESS_COLOR = "#b8a9e6";
 
 function formatTime(seconds: number) {
   if (!Number.isFinite(seconds)) return "0:00";
@@ -31,63 +38,62 @@ function PauseIcon() {
 }
 
 export function AudioPlayer({ src }: { src: string }) {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const wavesurferRef = useRef<WaveSurfer | null>(null);
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
+    if (!containerRef.current) return;
 
-    const onTimeUpdate = () => setCurrentTime(audio.currentTime);
-    const onLoadedMetadata = () => setDuration(audio.duration || 0);
+    const ws = WaveSurfer.create({
+      container: containerRef.current,
+      waveColor: WAVE_COLOR,
+      progressColor: PROGRESS_COLOR,
+      cursorColor: PROGRESS_COLOR,
+      cursorWidth: 1,
+      height: 36,
+      barWidth: 2,
+      barGap: 2,
+      barRadius: 2,
+      url: src,
+    });
+    wavesurferRef.current = ws;
+
+    const onReady = () => setDuration(ws.getDuration());
+    const onTimeupdate = (time: number) => setCurrentTime(time);
     const onPlay = () => setPlaying(true);
-    const onPauseOrEnd = () => setPlaying(false);
+    const onPauseOrFinish = () => setPlaying(false);
 
-    audio.addEventListener("timeupdate", onTimeUpdate);
-    audio.addEventListener("loadedmetadata", onLoadedMetadata);
-    audio.addEventListener("play", onPlay);
-    audio.addEventListener("pause", onPauseOrEnd);
-    audio.addEventListener("ended", onPauseOrEnd);
+    ws.on("ready", onReady);
+    ws.on("timeupdate", onTimeupdate);
+    ws.on("play", onPlay);
+    ws.on("pause", onPauseOrFinish);
+    ws.on("finish", onPauseOrFinish);
 
     return () => {
-      audio.removeEventListener("timeupdate", onTimeUpdate);
-      audio.removeEventListener("loadedmetadata", onLoadedMetadata);
-      audio.removeEventListener("play", onPlay);
-      audio.removeEventListener("pause", onPauseOrEnd);
-      audio.removeEventListener("ended", onPauseOrEnd);
-      if (currentlyPlaying === audio) currentlyPlaying = null;
+      if (currentlyPlaying === ws) currentlyPlaying = null;
+      ws.destroy();
     };
-  }, []);
+  }, [src]);
 
   function togglePlay() {
-    const audio = audioRef.current;
-    if (!audio) return;
-    if (audio.paused) {
-      if (currentlyPlaying && currentlyPlaying !== audio) {
+    const ws = wavesurferRef.current;
+    if (!ws) return;
+    if (!ws.isPlaying()) {
+      if (currentlyPlaying && currentlyPlaying !== ws) {
         currentlyPlaying.pause();
       }
-      currentlyPlaying = audio;
-      audio.play();
+      currentlyPlaying = ws;
+      ws.play();
     } else {
-      audio.pause();
+      ws.pause();
     }
   }
 
-  function handleSeek(e: React.ChangeEvent<HTMLInputElement>) {
-    const audio = audioRef.current;
-    if (!audio) return;
-    const time = Number(e.target.value);
-    audio.currentTime = time;
-    setCurrentTime(time);
-  }
-
-  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
-
   return (
     <div className="flex items-center gap-3">
-      <audio ref={audioRef} preload="metadata" src={src} />
       <button
         type="button"
         onClick={togglePlay}
@@ -99,16 +105,7 @@ export function AudioPlayer({ src }: { src: string }) {
       <span className="w-9 shrink-0 font-mono text-xs tabular-nums text-muted">
         {formatTime(currentTime)}
       </span>
-      <input
-        type="range"
-        className="audio-seek min-w-0 flex-1"
-        min={0}
-        max={duration || 0}
-        step={0.01}
-        value={Math.min(currentTime, duration || 0)}
-        onChange={handleSeek}
-        style={{ "--progress": `${progress}%` } as React.CSSProperties}
-      />
+      <div ref={containerRef} className="min-w-0 flex-1 cursor-pointer" />
       <span className="w-9 shrink-0 font-mono text-xs tabular-nums text-muted">
         {formatTime(duration)}
       </span>

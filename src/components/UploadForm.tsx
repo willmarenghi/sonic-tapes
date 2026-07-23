@@ -38,9 +38,11 @@ function errorMessage(err: unknown): string {
 
 export function UploadForm({
   defaultReplyTo,
+  defaultMode,
   editingPost,
 }: {
   defaultReplyTo?: string;
+  defaultMode?: "voice" | "text";
   editingPost?: Post;
 }) {
   const router = useRouter();
@@ -50,6 +52,7 @@ export function UploadForm({
   const [title, setTitle] = useState(editingPost?.title ?? "");
   const [notes, setNotes] = useState(editingPost?.notes ?? "");
   const [replyTo, setReplyTo] = useState(defaultReplyTo ?? "");
+  const [replyMode, setReplyMode] = useState<"voice" | "text">(defaultMode ?? "voice");
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [recorderKey, setRecorderKey] = useState(0);
   const [fileInputKey, setFileInputKey] = useState(0);
@@ -61,6 +64,17 @@ export function UploadForm({
   const existingAudioUrl = editingPost?.audio_url ?? null;
   const existingCoverUrl = editingPost?.cover_art_url ?? null;
   const effectiveParentPostId = isEditing ? editingPost.parent_post_id : replyTo || null;
+  const isReply = !!effectiveParentPostId;
+  const isTextReply = isReply && replyMode === "text";
+
+  function switchReplyMode(mode: "voice" | "text") {
+    setReplyMode(mode);
+    if (mode === "text") {
+      setAudioFile(null);
+      setRecorderKey((k) => k + 1);
+      setFileInputKey((k) => k + 1);
+    }
+  }
 
   useEffect(() => {
     if (isEditing) return;
@@ -113,8 +127,16 @@ export function UploadForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const hasAudio = !!audioFile || !!existingAudioUrl;
-    if (!effectiveParentPostId && !hasAudio) {
+    if (!isReply && !hasAudio) {
       setError("An audio file is required to start a new song idea.");
+      return;
+    }
+    if (isReply && !isEditing && replyMode === "voice" && !hasAudio) {
+      setError("Add a recording or file for your audio reply.");
+      return;
+    }
+    if (isTextReply && !isEditing && !notes.trim()) {
+      setError("Add some text for your reply.");
       return;
     }
     if (audioFile && audioFile.size > MAX_UPLOAD_BYTES) {
@@ -232,34 +254,64 @@ export function UploadForm({
         </div>
       )}
 
-      <div>
-        <span className="mb-1 block text-sm text-muted">
-          Audio{effectiveParentPostId && " (optional for a reply)"}
-        </span>
-        {existingAudioUrl && !audioFile && (
-          <p className="mb-2 text-xs text-muted">
-            Current:{" "}
-            <a href={existingAudioUrl} target="_blank" rel="noreferrer" className="underline">
-              audio file
-            </a>{" "}
-            — record or choose a new one below to replace it.
-          </p>
-        )}
-        <div className="flex flex-wrap items-center gap-3">
-          <VoiceRecorder key={`recorder-${recorderKey}`} onRecorded={handleRecorded} />
-          <input
-            key={`file-${fileInputKey}`}
-            id="audio"
-            type="file"
-            accept="audio/*"
-            onChange={(e) => handleFilePicked(e.target.files?.[0] ?? null)}
-            className="text-sm text-muted file:mr-3 file:min-h-11 file:rounded-md file:border-0 file:bg-line file:px-3 file:py-2 file:text-foreground"
-          />
+      {!isEditing && isReply && (
+        <div>
+          <span className="mb-1 block text-sm text-muted">Reply type</span>
+          <div className="inline-flex rounded-md border border-line p-1">
+            <button
+              type="button"
+              onClick={() => switchReplyMode("voice")}
+              className={`min-h-9 rounded px-3 text-sm transition ${
+                replyMode === "voice"
+                  ? "bg-accent text-accent-foreground"
+                  : "text-muted hover:text-foreground"
+              }`}
+            >
+              Audio
+            </button>
+            <button
+              type="button"
+              onClick={() => switchReplyMode("text")}
+              className={`min-h-9 rounded px-3 text-sm transition ${
+                replyMode === "text"
+                  ? "bg-accent text-accent-foreground"
+                  : "text-muted hover:text-foreground"
+              }`}
+            >
+              Text only
+            </button>
+          </div>
         </div>
-        <p className="mt-1 text-xs text-muted">
-          Recordings stop automatically at 15 minutes. Files up to {formatBytes(MAX_UPLOAD_BYTES)}.
-        </p>
-      </div>
+      )}
+
+      {!isTextReply && (
+        <div>
+          <span className="mb-1 block text-sm text-muted">Audio</span>
+          {existingAudioUrl && !audioFile && (
+            <p className="mb-2 text-xs text-muted">
+              Current:{" "}
+              <a href={existingAudioUrl} target="_blank" rel="noreferrer" className="underline">
+                audio file
+              </a>{" "}
+              — record or choose a new one below to replace it.
+            </p>
+          )}
+          <div className="flex flex-wrap items-center gap-3">
+            <VoiceRecorder key={`recorder-${recorderKey}`} onRecorded={handleRecorded} />
+            <input
+              key={`file-${fileInputKey}`}
+              id="audio"
+              type="file"
+              accept="audio/*"
+              onChange={(e) => handleFilePicked(e.target.files?.[0] ?? null)}
+              className="text-sm text-muted file:mr-3 file:min-h-11 file:rounded-md file:border-0 file:bg-line file:px-3 file:py-2 file:text-foreground"
+            />
+          </div>
+          <p className="mt-1 text-xs text-muted">
+            Recordings stop automatically at 15 minutes. Files up to {formatBytes(MAX_UPLOAD_BYTES)}.
+          </p>
+        </div>
+      )}
 
       <div>
         <label htmlFor="cover" className="mb-1 block text-sm text-muted">
@@ -294,7 +346,7 @@ export function UploadForm({
 
       <div>
         <label htmlFor="notes" className="mb-1 block text-sm text-muted">
-          Notes (chords, description, etc.)
+          {isTextReply ? "Your reply" : "Notes (chords, description, etc.)"}
         </label>
         <div className="mb-2 flex flex-wrap gap-2">
           {QUICK_TAGS.map((tag) => (

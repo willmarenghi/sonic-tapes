@@ -88,10 +88,16 @@ export function PostCard({
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <Link
-              href={`/upload?replyTo=${post.id}`}
+              href={`/upload?replyTo=${post.id}&mode=voice`}
               className="flex min-h-9 items-center rounded-md border border-line px-2.5 text-xs text-muted hover:border-accent hover:text-foreground"
             >
-              Reply
+              Audio reply
+            </Link>
+            <Link
+              href={`/upload?replyTo=${post.id}&mode=text`}
+              className="flex min-h-9 items-center rounded-md border border-line px-2.5 text-xs text-muted hover:border-accent hover:text-foreground"
+            >
+              Text reply
             </Link>
             {isOwner && (
               <Link
