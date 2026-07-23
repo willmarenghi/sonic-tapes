@@ -29,6 +29,20 @@ body {
   color: var(--foreground);
 }
 
+/*
+ * iOS Safari auto-zooms the viewport when focusing a text input with a
+ * computed font-size under 16px. Most inputs here use Tailwind's text-sm
+ * (14px), which triggers that zoom on mobile. Forcing 16px on small
+ * viewports prevents it without changing desktop sizing.
+ */
+@media (max-width: 640px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
 input[type="range"].audio-seek {
   -webkit-appearance: none;
   appearance: none;
