@@ -454,7 +454,12 @@ function ShowsPageContent() {
             );
 
             return (
-              <li key={show.id} className="overflow-hidden rounded-lg border border-accent bg-surface">
+              <li
+                key={show.id}
+                className={`rounded-lg border border-accent bg-surface ${
+                  isExpanded ? "" : "overflow-hidden"
+                }`}
+              >
                 {editingShowId === show.id ? (
                   <>
                     <div className="flex flex-col gap-2 px-4 py-3">
