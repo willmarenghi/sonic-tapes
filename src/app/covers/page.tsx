@@ -386,7 +386,7 @@ function CoversPageContent() {
 
       {addToSetlistFor && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 sm:items-center"
+          className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 p-4 pt-16 sm:pt-24"
           onClick={closeAddToSetlist}
         >
           <div
@@ -465,11 +465,11 @@ function CoversPageContent() {
                 <button
                   type="button"
                   onClick={() => setNewSetlistMode(true)}
-                  className="mb-3 w-full rounded-md border border-dashed border-line-dashed px-3 py-2 text-left text-sm text-accent transition hover:border-accent"
+                  className="mb-3 w-full rounded-md border border-dashed border-accent px-3 py-2 text-left text-sm text-accent transition hover:bg-line"
                 >
                   + new setlist
                 </button>
-                <ul className="max-h-64 divide-y divide-line overflow-y-auto">
+                <ul className="flex max-h-64 flex-col gap-3 overflow-y-auto">
                   {shows.length === 0 ? (
                     <li className="py-2 text-sm text-muted">no setlists yet</li>
                   ) : (
@@ -481,7 +481,7 @@ function CoversPageContent() {
                             type="button"
                             disabled={addingToShowId === show.id}
                             onClick={() => handleAddToExistingShow(show.id)}
-                            className="flex w-full items-center justify-between gap-3 py-2 text-left text-sm text-foreground transition hover:text-accent disabled:opacity-60"
+                            className="flex w-full items-center justify-between gap-3 rounded-md border border-accent px-3 py-2 text-left text-sm text-foreground transition hover:bg-line disabled:opacity-60"
                           >
                             <span className="min-w-0 truncate">{show.location}</span>
                             <span className="shrink-0 text-xs text-muted">

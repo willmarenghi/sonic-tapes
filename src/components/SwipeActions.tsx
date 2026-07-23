@@ -143,7 +143,7 @@ export function SwipeActions({
               action.onClick();
             }}
             style={{ width: ACTION_WIDTH }}
-            className={`flex h-full min-h-0 items-center justify-center text-sm font-medium ${action.className ?? "bg-red-500 text-white"}`}
+            className={`flex h-full min-h-0 items-center justify-center text-sm font-medium lowercase ${action.className ?? "bg-red-500 text-white"}`}
           >
             {action.label}
           </button>
