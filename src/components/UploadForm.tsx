@@ -10,6 +10,17 @@ import type { Post } from "@/lib/types";
 
 type PostOption = Pick<Post, "id" | "title" | "created_at">;
 
+const QUICK_TAGS = [
+  "riff",
+  "full song",
+  "lyrics only",
+  "demo",
+  "guitar only",
+  "vocals only",
+  "chorus only",
+  "acoustic",
+];
+
 function storagePath(userId: string, file: File) {
   const ext = file.name.split(".").pop();
   const random = crypto.randomUUID();
@@ -73,6 +84,18 @@ export function UploadForm({
     setError(null);
     setAudioFile(file);
     if (file) setFileInputKey((k) => k + 1);
+  }
+
+  function addQuickTag(tag: string) {
+    setNotes((prev) => {
+      const existingEntries = prev
+        .split(/[,\n]/)
+        .map((part) => part.trim().toLowerCase())
+        .filter(Boolean);
+      if (existingEntries.includes(tag.toLowerCase())) return prev;
+      const trimmed = prev.trim();
+      return trimmed ? `${trimmed}, ${tag}` : tag;
+    });
   }
 
   function handleFilePicked(file: File | null) {
@@ -274,6 +297,18 @@ export function UploadForm({
         <label htmlFor="notes" className="mb-1 block text-sm text-muted">
           Notes (chords, description, etc.)
         </label>
+        <div className="mb-2 flex flex-wrap gap-2">
+          {QUICK_TAGS.map((tag) => (
+            <button
+              key={tag}
+              type="button"
+              onClick={() => addQuickTag(tag)}
+              className="rounded-full border border-accent px-2.5 py-1 text-xs lowercase text-accent transition hover:bg-line"
+            >
+              + {tag}
+            </button>
+          ))}
+        </div>
         <textarea
           id="notes"
           rows={6}
