@@ -1,14 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { MAX_UPLOAD_BYTES, formatBytes } from "@/lib/audioLimits";
 import type { Post } from "@/lib/types";
-
-type PostOption = Pick<Post, "id" | "title" | "created_at">;
 
 const QUICK_TAGS = [
   "riff",
@@ -38,21 +36,17 @@ function errorMessage(err: unknown): string {
 
 export function UploadForm({
   defaultReplyTo,
-  defaultMode,
   editingPost,
 }: {
   defaultReplyTo?: string;
-  defaultMode?: "voice" | "text";
   editingPost?: Post;
 }) {
   const router = useRouter();
   const isEditing = !!editingPost;
 
-  const [posts, setPosts] = useState<PostOption[]>([]);
   const [title, setTitle] = useState(editingPost?.title ?? "");
   const [notes, setNotes] = useState(editingPost?.notes ?? "");
-  const [replyTo, setReplyTo] = useState(defaultReplyTo ?? "");
-  const [replyMode, setReplyMode] = useState<"voice" | "text">(defaultMode ?? "voice");
+  const [replyMode, setReplyMode] = useState<"voice" | "text">("voice");
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [recorderKey, setRecorderKey] = useState(0);
   const [fileInputKey, setFileInputKey] = useState(0);
@@ -63,7 +57,7 @@ export function UploadForm({
 
   const existingAudioUrl = editingPost?.audio_url ?? null;
   const existingCoverUrl = editingPost?.cover_art_url ?? null;
-  const effectiveParentPostId = isEditing ? editingPost.parent_post_id : replyTo || null;
+  const effectiveParentPostId = isEditing ? editingPost.parent_post_id : (defaultReplyTo ?? null);
   const isReply = !!effectiveParentPostId;
   const isTextReply = isReply && replyMode === "text";
 
@@ -75,16 +69,6 @@ export function UploadForm({
       setFileInputKey((k) => k + 1);
     }
   }
-
-  useEffect(() => {
-    if (isEditing) return;
-    const supabase = createClient();
-    supabase
-      .from("posts")
-      .select("id, title, created_at")
-      .order("created_at", { ascending: false })
-      .then(({ data }) => setPosts((data as PostOption[]) ?? []));
-  }, [isEditing]);
 
   function handleRecorded(file: File | null) {
     if (file && file.size > MAX_UPLOAD_BYTES) {
@@ -194,7 +178,7 @@ export function UploadForm({
         if (updateError) throw updateError;
       } else {
         const { error: insertError } = await supabase.from("posts").insert({
-          title,
+          title: isReply ? "" : title,
           uploader_id: user.id,
           audio_url: audioUrl,
           cover_art_url: coverUrl,
@@ -214,46 +198,6 @@ export function UploadForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      <div>
-        <label htmlFor="title" className="mb-1 block text-sm text-muted">
-          Title
-        </label>
-        <input
-          id="title"
-          required
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="w-full rounded-md border border-line bg-surface px-3 py-2 text-base text-foreground outline-none focus:border-accent"
-        />
-      </div>
-
-      {isEditing ? (
-        <p className="text-sm text-muted">
-          {editingPost.parent_post_id
-            ? "Editing a reply — the thread it belongs to can't be changed."
-            : "Editing a song idea."}
-        </p>
-      ) : (
-        <div>
-          <label htmlFor="replyTo" className="mb-1 block text-sm text-muted">
-            Replying to (leave blank to start a new song idea)
-          </label>
-          <select
-            id="replyTo"
-            value={replyTo}
-            onChange={(e) => setReplyTo(e.target.value)}
-            className="w-full rounded-md border border-line bg-surface px-3 py-2 text-base text-foreground outline-none focus:border-accent"
-          >
-            <option value="">— New song idea —</option>
-            {posts.map((post) => (
-              <option key={post.id} value={post.id}>
-                {post.title} ({new Date(post.created_at).toLocaleDateString()})
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
       {!isEditing && isReply && (
         <div>
           <span className="mb-1 block text-sm text-muted">Reply type</span>
@@ -282,6 +226,29 @@ export function UploadForm({
             </button>
           </div>
         </div>
+      )}
+
+      {!isReply && (
+        <div>
+          <label htmlFor="title" className="mb-1 block text-sm text-muted">
+            Title
+          </label>
+          <input
+            id="title"
+            required
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="w-full rounded-md border border-line bg-surface px-3 py-2 text-base text-foreground outline-none focus:border-accent"
+          />
+        </div>
+      )}
+
+      {isEditing && (
+        <p className="text-sm text-muted">
+          {editingPost.parent_post_id
+            ? "Editing a reply — the thread it belongs to can't be changed."
+            : "Editing a song idea."}
+        </p>
       )}
 
       {!isTextReply && (
@@ -374,7 +341,7 @@ export function UploadForm({
       <div className="flex gap-3">
         <button
           type="button"
-          onClick={() => router.push("/")}
+          onClick={() => router.back()}
           className="min-h-11 flex-1 rounded-md border border-line px-3 py-2 font-medium text-muted transition hover:text-foreground"
         >
           Cancel

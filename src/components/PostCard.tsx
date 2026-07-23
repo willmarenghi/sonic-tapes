@@ -79,25 +79,27 @@ export function PostCard({
       <article className="rounded-xl border-2 border-line bg-surface p-4 shadow-sm shadow-black/20">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <h3 className="break-words font-semibold text-foreground">{post.title}</h3>
-            <p className="text-xs text-muted">
-              {post.uploader?.name ?? "Unknown"} · {formatDate(post.created_at)}
-              {depth > 0 && " · reply"}
-              {post.updated_at && ` · edited ${formatDate(post.updated_at)}`}
+            {depth === 0 && (
+              <h3 className="break-words font-semibold text-foreground">{post.title}</h3>
+            )}
+            <p className={depth > 0 ? "text-sm text-foreground" : "text-xs text-muted"}>
+              <span className={depth > 0 ? "font-semibold" : undefined}>
+                {post.uploader?.name ?? "Unknown"}
+              </span>
+              <span className={depth > 0 ? "text-muted" : undefined}>
+                {" "}
+                · {formatDate(post.created_at)}
+                {depth > 0 && " · reply"}
+                {post.updated_at && ` · edited ${formatDate(post.updated_at)}`}
+              </span>
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <Link
-              href={`/upload?replyTo=${post.id}&mode=voice`}
+              href={`/upload?replyTo=${post.id}`}
               className="flex min-h-9 items-center rounded-md border border-line px-2.5 text-xs text-muted hover:border-accent hover:text-foreground"
             >
-              Audio reply
-            </Link>
-            <Link
-              href={`/upload?replyTo=${post.id}&mode=text`}
-              className="flex min-h-9 items-center rounded-md border border-line px-2.5 text-xs text-muted hover:border-accent hover:text-foreground"
-            >
-              Text reply
+              Reply
             </Link>
             {isOwner && (
               <Link

@@ -12,7 +12,6 @@ function UploadPageContent() {
   const searchParams = useSearchParams();
   const editId = searchParams.get("edit");
   const replyTo = searchParams.get("replyTo") ?? undefined;
-  const mode = searchParams.get("mode") === "text" ? "text" : "voice";
 
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [status, setStatus] = useState<"loading" | "not-allowed" | "ready">(
@@ -50,9 +49,9 @@ function UploadPageContent() {
   return (
     <>
       <h1 className="mb-6 font-display text-2xl lowercase text-foreground">
-        {editingPost ? "edit post" : "new song idea"}
+        {editingPost ? "edit post" : replyTo ? "reply" : "new song idea"}
       </h1>
-      <UploadForm defaultReplyTo={replyTo} defaultMode={mode} editingPost={editingPost ?? undefined} />
+      <UploadForm defaultReplyTo={replyTo} editingPost={editingPost ?? undefined} />
     </>
   );
 }

@@ -53,6 +53,7 @@ export function AudioPlayer({ src }: { src: string }) {
       progressColor: PROGRESS_COLOR,
       cursorColor: PROGRESS_COLOR,
       cursorWidth: 1,
+      dragToSeek: true,
       height: 36,
       barWidth: 2,
       barGap: 2,
