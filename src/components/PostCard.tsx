@@ -26,7 +26,6 @@ export function PostCard({
   isAdmin = false,
   onDeleted,
   forceExpanded = false,
-  anchorId,
 }: {
   post: PostWithReplies;
   depth?: number;
@@ -34,7 +33,6 @@ export function PostCard({
   isAdmin?: boolean;
   onDeleted?: () => void;
   forceExpanded?: boolean;
-  anchorId?: string;
 }) {
   // null = no manual choice yet, so a search match (forceExpanded) wins;
   // once the user explicitly toggles it, their choice takes over.
@@ -75,7 +73,7 @@ export function PostCard({
   }
 
   return (
-    <div id={anchorId} className={depth > 0 ? "border-l border-line pl-2 sm:pl-4" : ""}>
+    <div id={post.id} className={depth > 0 ? "border-l border-line pl-2 sm:pl-4" : ""}>
       <article className="rounded-xl border-2 border-line bg-surface p-4 shadow-sm shadow-black/20">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">

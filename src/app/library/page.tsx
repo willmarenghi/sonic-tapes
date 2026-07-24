@@ -1,14 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { buildThreads, threadMatchesQuery } from "@/lib/threads";
 import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
 import { PostCard } from "@/components/PostCard";
 import type { Post, PostWithReplies, Profile } from "@/lib/types";
+
+// True if `targetId` is `post.id` or belongs to one of its replies at any depth.
+function threadContainsPost(post: PostWithReplies, targetId: string): boolean {
+  return post.id === targetId || post.replies.some((reply) => threadContainsPost(reply, targetId));
+}
+
+function findRootThreadId(threads: PostWithReplies[], targetId: string): string | null {
+  return threads.find((thread) => threadContainsPost(thread, targetId))?.id ?? null;
+}
 
 function formatShelfDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
@@ -28,13 +38,22 @@ function RingIcon({ className }: { className?: string }) {
 }
 
 function Feed({ selectedUserId }: { selectedUserId: string | null }) {
+  const searchParams = useSearchParams();
+  const targetPostId = searchParams.get("post");
+
   const [threads, setThreads] = useState<PostWithReplies[] | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [query, setQuery] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "shelf">("shelf");
-  const [selectedShelfThreadId, setSelectedShelfThreadId] = useState<string | null>(null);
+  // undefined = no explicit choice yet, so a "?post=" deep link (coming back
+  // from "Cancel" on a reply/edit form) wins; null = the user explicitly
+  // backed out to the shelf grid, which overrides the deep link.
+  const [selectedShelfThreadId, setSelectedShelfThreadId] = useState<string | null | undefined>(
+    undefined
+  );
+  const scrolledToTargetRef = useRef(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -59,6 +78,35 @@ function Feed({ selectedUserId }: { selectedUserId: string | null }) {
     load();
   }, [reloadKey]);
 
+  const trimmedQuery = query.trim().toLowerCase();
+  let visibleThreads = threads ?? [];
+  if (selectedUserId) {
+    visibleThreads = visibleThreads.filter((thread) => thread.uploader_id === selectedUserId);
+  }
+  if (trimmedQuery) {
+    visibleThreads = visibleThreads.filter((thread) => threadMatchesQuery(thread, trimmedQuery));
+  }
+
+  const effectiveShelfThreadId =
+    selectedShelfThreadId === undefined
+      ? (targetPostId && threads ? findRootThreadId(threads, targetPostId) : null)
+      : selectedShelfThreadId;
+
+  const activeShelfThread =
+    viewMode === "shelf" && effectiveShelfThreadId
+      ? (visibleThreads.find((thread) => thread.id === effectiveShelfThreadId) ?? null)
+      : null;
+
+  // Once the deep-linked thread is actually on screen, scroll the specific
+  // post (which may be a nested reply) into view.
+  useEffect(() => {
+    if (scrolledToTargetRef.current || !targetPostId || !activeShelfThread) return;
+    scrolledToTargetRef.current = true;
+    requestAnimationFrame(() => {
+      document.getElementById(targetPostId)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }, [targetPostId, activeShelfThread]);
+
   if (threads === null) {
     return <p className="text-muted">Loading…</p>;
   }
@@ -80,20 +128,6 @@ function Feed({ selectedUserId }: { selectedUserId: string | null }) {
       </div>
     );
   }
-
-  const trimmedQuery = query.trim().toLowerCase();
-  let visibleThreads = threads;
-  if (selectedUserId) {
-    visibleThreads = visibleThreads.filter((thread) => thread.uploader_id === selectedUserId);
-  }
-  if (trimmedQuery) {
-    visibleThreads = visibleThreads.filter((thread) => threadMatchesQuery(thread, trimmedQuery));
-  }
-
-  const activeShelfThread =
-    viewMode === "shelf" && selectedShelfThreadId
-      ? (visibleThreads.find((thread) => thread.id === selectedShelfThreadId) ?? null)
-      : null;
 
   return (
     <div>
@@ -140,7 +174,7 @@ function Feed({ selectedUserId }: { selectedUserId: string | null }) {
         <p className="text-muted">
           {trimmedQuery ? `No matches for "${query.trim()}".` : "Nothing to show with the current filters."}
         </p>
-      ) : viewMode === "shelf" && selectedShelfThreadId ? (
+      ) : viewMode === "shelf" && effectiveShelfThreadId ? (
         <div>
           <button
             type="button"
@@ -213,7 +247,6 @@ function Feed({ selectedUserId }: { selectedUserId: string | null }) {
               isAdmin={isAdmin}
               onDeleted={() => setReloadKey((k) => k + 1)}
               forceExpanded={!!trimmedQuery}
-              anchorId={thread.id}
             />
           ))}
         </div>
@@ -254,7 +287,9 @@ export default function FeedPage() {
             ← back home
           </Link>
         )}
-        <Feed selectedUserId={selectedUserId} />
+        <Suspense fallback={<p className="text-muted">Loading…</p>}>
+          <Feed selectedUserId={selectedUserId} />
+        </Suspense>
       </AppShell>
     </RequireAuth>
   );

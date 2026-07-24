@@ -60,6 +60,12 @@ export function UploadForm({
   const effectiveParentPostId = isEditing ? editingPost.parent_post_id : (defaultReplyTo ?? null);
   const isReply = !!effectiveParentPostId;
   const isTextReply = isReply && replyMode === "text";
+  // Where Cancel should return to: the post being replied to, or the post
+  // being edited (its parent thread, if it's a reply). A brand-new song idea
+  // has no post to go back to, so that falls back to router.back().
+  const cancelPostId = isEditing
+    ? (editingPost.parent_post_id ?? editingPost.id)
+    : (effectiveParentPostId ?? null);
 
   function switchReplyMode(mode: "voice" | "text") {
     setReplyMode(mode);
@@ -280,36 +286,38 @@ export function UploadForm({
         </div>
       )}
 
-      <div>
-        <label htmlFor="cover" className="mb-1 block text-sm text-muted">
-          Cover art (optional)
-        </label>
-        {existingCoverUrl && !coverFile && !coverRemoved && (
-          <div className="mb-2 flex items-center gap-3">
-            <div className="relative h-24 w-24 overflow-hidden rounded-md">
-              <Image src={existingCoverUrl} alt="" fill sizes="96px" className="object-cover" />
+      {!isReply && (
+        <div>
+          <label htmlFor="cover" className="mb-1 block text-sm text-muted">
+            Cover art (optional)
+          </label>
+          {existingCoverUrl && !coverFile && !coverRemoved && (
+            <div className="mb-2 flex items-center gap-3">
+              <div className="relative h-24 w-24 overflow-hidden rounded-md">
+                <Image src={existingCoverUrl} alt="" fill sizes="96px" className="object-cover" />
+              </div>
+              <button
+                type="button"
+                onClick={() => setCoverRemoved(true)}
+                className="min-h-9 rounded-md border border-line px-2.5 text-xs text-red-400 hover:border-red-400"
+              >
+                Remove image
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => setCoverRemoved(true)}
-              className="min-h-9 rounded-md border border-line px-2.5 text-xs text-red-400 hover:border-red-400"
-            >
-              Remove image
-            </button>
-          </div>
-        )}
-        {coverRemoved && <p className="mb-2 text-xs text-muted">Image will be removed.</p>}
-        <input
-          id="cover"
-          type="file"
-          accept="image/*"
-          onChange={(e) => {
-            setCoverFile(e.target.files?.[0] ?? null);
-            if (e.target.files?.[0]) setCoverRemoved(false);
-          }}
-          className="w-full text-sm text-muted file:mr-3 file:min-h-11 file:rounded-md file:border-0 file:bg-line file:px-3 file:py-2 file:text-foreground"
-        />
-      </div>
+          )}
+          {coverRemoved && <p className="mb-2 text-xs text-muted">Image will be removed.</p>}
+          <input
+            id="cover"
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              setCoverFile(e.target.files?.[0] ?? null);
+              if (e.target.files?.[0]) setCoverRemoved(false);
+            }}
+            className="w-full text-sm text-muted file:mr-3 file:min-h-11 file:rounded-md file:border-0 file:bg-line file:px-3 file:py-2 file:text-foreground"
+          />
+        </div>
+      )}
 
       <div>
         <label htmlFor="notes" className="mb-1 block text-sm text-muted">
@@ -341,7 +349,7 @@ export function UploadForm({
       <div className="flex gap-3">
         <button
           type="button"
-          onClick={() => router.back()}
+          onClick={() => (cancelPostId ? router.push(`/library?post=${cancelPostId}`) : router.back())}
           className="min-h-11 flex-1 rounded-md border border-line px-3 py-2 font-medium text-muted transition hover:text-foreground"
         >
           Cancel
