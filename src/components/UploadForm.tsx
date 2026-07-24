@@ -36,9 +36,11 @@ function errorMessage(err: unknown): string {
 
 export function UploadForm({
   defaultReplyTo,
+  returnView,
   editingPost,
 }: {
   defaultReplyTo?: string;
+  returnView?: "list";
   editingPost?: Post;
 }) {
   const router = useRouter();
@@ -66,6 +68,9 @@ export function UploadForm({
   const cancelPostId = isEditing
     ? (editingPost.parent_post_id ?? editingPost.id)
     : (effectiveParentPostId ?? null);
+  const cancelHref = cancelPostId
+    ? `/library?post=${cancelPostId}${returnView ? `&view=${returnView}` : ""}`
+    : null;
 
   function switchReplyMode(mode: "voice" | "text") {
     setReplyMode(mode);
@@ -349,7 +354,7 @@ export function UploadForm({
       <div className="flex gap-3">
         <button
           type="button"
-          onClick={() => (cancelPostId ? router.push(`/library?post=${cancelPostId}`) : router.back())}
+          onClick={() => (cancelHref ? router.push(cancelHref) : router.back())}
           className="min-h-11 flex-1 rounded-md border border-line px-3 py-2 font-medium text-muted transition hover:text-foreground"
         >
           Cancel

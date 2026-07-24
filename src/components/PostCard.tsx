@@ -26,6 +26,7 @@ export function PostCard({
   isAdmin = false,
   onDeleted,
   forceExpanded = false,
+  returnView,
 }: {
   post: PostWithReplies;
   depth?: number;
@@ -33,6 +34,7 @@ export function PostCard({
   isAdmin?: boolean;
   onDeleted?: () => void;
   forceExpanded?: boolean;
+  returnView?: "shelf" | "list";
 }) {
   // null = no manual choice yet, so a search match (forceExpanded) wins;
   // once the user explicitly toggles it, their choice takes over.
@@ -94,14 +96,14 @@ export function PostCard({
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <Link
-              href={`/upload?replyTo=${post.id}`}
+              href={`/upload?replyTo=${post.id}${returnView ? `&view=${returnView}` : ""}`}
               className="flex min-h-9 items-center rounded-md border border-line px-2.5 text-xs text-muted hover:border-accent hover:text-foreground"
             >
               Reply
             </Link>
             {isOwner && (
               <Link
-                href={`/upload?edit=${post.id}`}
+                href={`/upload?edit=${post.id}${returnView ? `&view=${returnView}` : ""}`}
                 className="flex min-h-9 items-center rounded-md border border-line px-2.5 text-xs text-muted hover:border-accent hover:text-foreground"
               >
                 Edit
@@ -158,6 +160,7 @@ export function PostCard({
               isAdmin={isAdmin}
               onDeleted={onDeleted}
               forceExpanded={forceExpanded}
+              returnView={returnView}
             />
           ))}
         </div>

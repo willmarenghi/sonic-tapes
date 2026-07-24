@@ -46,7 +46,9 @@ function Feed({ selectedUserId }: { selectedUserId: string | null }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [query, setQuery] = useState("");
-  const [viewMode, setViewMode] = useState<"list" | "shelf">("shelf");
+  const [viewMode, setViewMode] = useState<"list" | "shelf">(() =>
+    searchParams.get("view") === "list" ? "list" : "shelf"
+  );
   // undefined = no explicit choice yet, so a "?post=" deep link (coming back
   // from "Cancel" on a reply/edit form) wins; null = the user explicitly
   // backed out to the shelf grid, which overrides the deep link.
@@ -97,15 +99,22 @@ function Feed({ selectedUserId }: { selectedUserId: string | null }) {
       ? (visibleThreads.find((thread) => thread.id === effectiveShelfThreadId) ?? null)
       : null;
 
-  // Once the deep-linked thread is actually on screen, scroll the specific
-  // post (which may be a nested reply) into view.
+  // In list view, whichever thread contains the deep-linked post (if any)
+  // needs to be force-expanded so a nested reply is actually on screen.
+  const targetThread = targetPostId
+    ? (visibleThreads.find((thread) => threadContainsPost(thread, targetPostId)) ?? null)
+    : null;
+
+  // Once the deep-linked post is actually on screen — in either view —
+  // scroll it into view.
   useEffect(() => {
-    if (scrolledToTargetRef.current || !targetPostId || !activeShelfThread) return;
+    if (scrolledToTargetRef.current || !targetPostId) return;
+    if (viewMode === "shelf" ? !activeShelfThread : !targetThread) return;
     scrolledToTargetRef.current = true;
     requestAnimationFrame(() => {
       document.getElementById(targetPostId)?.scrollIntoView({ behavior: "smooth", block: "center" });
     });
-  }, [targetPostId, activeShelfThread]);
+  }, [targetPostId, viewMode, activeShelfThread, targetThread]);
 
   if (threads === null) {
     return <p className="text-muted">Loading…</p>;
@@ -193,6 +202,7 @@ function Feed({ selectedUserId }: { selectedUserId: string | null }) {
                 setReloadKey((k) => k + 1);
               }}
               forceExpanded
+              returnView="shelf"
             />
           ) : (
             <p className="text-muted">This song is no longer available.</p>
@@ -246,7 +256,8 @@ function Feed({ selectedUserId }: { selectedUserId: string | null }) {
               currentUserId={currentUserId}
               isAdmin={isAdmin}
               onDeleted={() => setReloadKey((k) => k + 1)}
-              forceExpanded={!!trimmedQuery}
+              forceExpanded={!!trimmedQuery || thread.id === targetThread?.id}
+              returnView="list"
             />
           ))}
         </div>
