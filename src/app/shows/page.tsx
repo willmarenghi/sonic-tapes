@@ -151,12 +151,40 @@ function ShowsPageContent() {
   const [songCoverQuery, setSongCoverQuery] = useState<Record<string, string>>({});
   const [openSuggestionsFor, setOpenSuggestionsFor] = useState<string | null>(null);
   const [addingSongFor, setAddingSongFor] = useState<string | null>(null);
+  const coverInputWrapperRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [mobileSuggestionRect, setMobileSuggestionRect] = useState<{
+    top: number;
+    left: number;
+    width: number;
+  } | null>(null);
 
   const [dragState, setDragState] = useState<DragState>(null);
   const dragStateRef = useRef<DragState>(null);
   useEffect(() => {
     dragStateRef.current = dragState;
   }, [dragState]);
+
+  useEffect(() => {
+    if (!openSuggestionsFor) return;
+    const showId = openSuggestionsFor;
+    const updateRect = () => {
+      if (window.innerWidth >= 640) {
+        setMobileSuggestionRect(null);
+        return;
+      }
+      const el = coverInputWrapperRefs.current[showId];
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      setMobileSuggestionRect({ top: rect.bottom, left: 0, width: window.innerWidth });
+    };
+    updateRect();
+    window.addEventListener("resize", updateRect);
+    window.addEventListener("scroll", updateRect, true);
+    return () => {
+      window.removeEventListener("resize", updateRect);
+      window.removeEventListener("scroll", updateRect, true);
+    };
+  }, [openSuggestionsFor]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -605,7 +633,12 @@ function ShowsPageContent() {
                           className="min-w-0 flex-1 rounded-md border border-line bg-surface px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted focus:border-accent"
                         />
                       ) : (
-                        <div className="relative min-w-0 flex-1">
+                        <div
+                          ref={(el) => {
+                            coverInputWrapperRefs.current[show.id] = el;
+                          }}
+                          className="relative min-w-0 flex-1"
+                        >
                           <input
                             type="text"
                             value={songCoverQuery[show.id] ?? ""}
@@ -615,9 +648,10 @@ function ShowsPageContent() {
                               setSongCoverDraft((prev) => ({ ...prev, [show.id]: "" }));
                             }}
                             onFocus={() => setOpenSuggestionsFor(show.id)}
-                            onBlur={() =>
-                              setOpenSuggestionsFor((current) => (current === show.id ? null : current))
-                            }
+                            onBlur={() => {
+                              setOpenSuggestionsFor((current) => (current === show.id ? null : current));
+                              setMobileSuggestionRect(null);
+                            }}
                             placeholder="search cover songs…"
                             className="w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted focus:border-accent"
                           />
@@ -627,8 +661,24 @@ function ShowsPageContent() {
                               const matches = coverSongs.filter((c) =>
                                 c.title.toLowerCase().includes(query)
                               );
+                              const isMobileFullWidth = mobileSuggestionRect !== null;
                               return (
-                                <ul className="absolute inset-x-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-md border border-line bg-surface shadow-lg shadow-black/30">
+                                <ul
+                                  style={
+                                    mobileSuggestionRect
+                                      ? {
+                                          top: mobileSuggestionRect.top,
+                                          left: mobileSuggestionRect.left,
+                                          width: mobileSuggestionRect.width,
+                                        }
+                                      : undefined
+                                  }
+                                  className={
+                                    isMobileFullWidth
+                                      ? "fixed z-20 mt-1 max-h-64 overflow-y-auto rounded-md border border-line bg-surface shadow-lg shadow-black/30"
+                                      : "absolute inset-x-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-md border border-line bg-surface shadow-lg shadow-black/30"
+                                  }
+                                >
                                   {matches.length === 0 ? (
                                     <li className="px-3 py-2 text-sm text-muted">no matches</li>
                                   ) : (
@@ -641,6 +691,7 @@ function ShowsPageContent() {
                                             setSongCoverDraft((prev) => ({ ...prev, [show.id]: c.id }));
                                             setSongCoverQuery((prev) => ({ ...prev, [show.id]: c.title }));
                                             setOpenSuggestionsFor(null);
+                                            setMobileSuggestionRect(null);
                                           }}
                                           className="block w-full px-3 py-2 text-left text-sm text-foreground hover:bg-line"
                                         >
