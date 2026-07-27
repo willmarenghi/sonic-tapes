@@ -152,6 +152,7 @@ function ShowsPageContent() {
   const [openSuggestionsFor, setOpenSuggestionsFor] = useState<string | null>(null);
   const [addingSongFor, setAddingSongFor] = useState<string | null>(null);
   const coverInputWrapperRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const showCardRefs = useRef<Record<string, HTMLLIElement | null>>({});
   const [mobileSuggestionRect, setMobileSuggestionRect] = useState<{
     top: number;
     left: number;
@@ -172,10 +173,12 @@ function ShowsPageContent() {
         setMobileSuggestionRect(null);
         return;
       }
-      const el = coverInputWrapperRefs.current[showId];
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      setMobileSuggestionRect({ top: rect.bottom, left: 0, width: window.innerWidth });
+      const inputEl = coverInputWrapperRefs.current[showId];
+      const cardEl = showCardRefs.current[showId];
+      if (!inputEl || !cardEl) return;
+      const inputRect = inputEl.getBoundingClientRect();
+      const cardRect = cardEl.getBoundingClientRect();
+      setMobileSuggestionRect({ top: inputRect.bottom, left: cardRect.left, width: cardRect.width });
     };
     updateRect();
     window.addEventListener("resize", updateRect);
@@ -491,6 +494,9 @@ function ShowsPageContent() {
             return (
               <li
                 key={show.id}
+                ref={(el) => {
+                  showCardRefs.current[show.id] = el;
+                }}
                 className={`rounded-lg border border-accent bg-surface ${
                   isExpanded ? "" : "overflow-hidden"
                 }`}
