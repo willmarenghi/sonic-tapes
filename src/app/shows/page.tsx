@@ -154,7 +154,6 @@ function ShowsPageContent() {
   const coverInputWrapperRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const showCardRefs = useRef<Record<string, HTMLLIElement | null>>({});
   const [mobileSuggestionRect, setMobileSuggestionRect] = useState<{
-    top: number;
     left: number;
     width: number;
   } | null>(null);
@@ -173,19 +172,17 @@ function ShowsPageContent() {
         setMobileSuggestionRect(null);
         return;
       }
-      const inputEl = coverInputWrapperRefs.current[showId];
+      const wrapEl = coverInputWrapperRefs.current[showId];
       const cardEl = showCardRefs.current[showId];
-      if (!inputEl || !cardEl) return;
-      const inputRect = inputEl.getBoundingClientRect();
+      if (!wrapEl || !cardEl) return;
+      const wrapRect = wrapEl.getBoundingClientRect();
       const cardRect = cardEl.getBoundingClientRect();
-      setMobileSuggestionRect({ top: inputRect.bottom, left: cardRect.left, width: cardRect.width });
+      setMobileSuggestionRect({ left: cardRect.left - wrapRect.left, width: cardRect.width });
     };
     updateRect();
     window.addEventListener("resize", updateRect);
-    window.addEventListener("scroll", updateRect, true);
     return () => {
       window.removeEventListener("resize", updateRect);
-      window.removeEventListener("scroll", updateRect, true);
     };
   }, [openSuggestionsFor]);
 
@@ -667,21 +664,16 @@ function ShowsPageContent() {
                               const matches = coverSongs.filter((c) =>
                                 c.title.toLowerCase().includes(query)
                               );
-                              const isMobileFullWidth = mobileSuggestionRect !== null;
                               return (
                                 <ul
                                   style={
                                     mobileSuggestionRect
-                                      ? {
-                                          top: mobileSuggestionRect.top,
-                                          left: mobileSuggestionRect.left,
-                                          width: mobileSuggestionRect.width,
-                                        }
+                                      ? { left: mobileSuggestionRect.left, width: mobileSuggestionRect.width }
                                       : undefined
                                   }
                                   className={
-                                    isMobileFullWidth
-                                      ? "fixed z-20 mt-1 max-h-64 overflow-y-auto rounded-md border border-line bg-surface shadow-lg shadow-black/30"
+                                    mobileSuggestionRect
+                                      ? "absolute top-full z-20 mt-1 max-h-64 overflow-y-auto rounded-md border border-line bg-surface shadow-lg shadow-black/30"
                                       : "absolute inset-x-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-md border border-line bg-surface shadow-lg shadow-black/30"
                                   }
                                 >
