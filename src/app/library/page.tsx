@@ -141,19 +141,30 @@ function Feed({ selectedUserId }: { selectedUserId: string | null }) {
   return (
     <div>
       <div className="sticky top-14 z-20 -mx-4 mb-4 border-b border-line bg-background px-4 py-3 md:static md:mx-0 md:mb-4 md:border-0 md:bg-transparent md:px-0 md:py-0">
-        <div className="flex flex-wrap items-center gap-3">
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="find a song, note, or bandmate…"
-            className="min-w-0 flex-1 rounded-md border border-line bg-surface px-3 py-2 text-base text-foreground outline-none placeholder:text-muted focus:border-accent"
-          />
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="find a song"
+          className="w-full rounded-md border border-line bg-surface px-3 py-2 text-base text-foreground outline-none placeholder:text-muted focus:border-accent"
+        />
+
+        <div className="my-3 border-t border-line" />
+
+        <Link
+          href="/upload"
+          className="flex min-h-11 items-center justify-center rounded-md bg-accent text-sm font-medium lowercase text-accent-foreground transition hover:brightness-110"
+        >
+          + new idea
+        </Link>
+
+        <div className="mt-3 flex items-center justify-end gap-2">
+          <span className="text-sm text-muted">view:</span>
           <div className="flex shrink-0 overflow-hidden rounded-md border border-line">
             <button
               type="button"
               onClick={() => setViewMode("shelf")}
-              className={`min-h-11 px-3 text-sm lowercase transition ${
+              className={`min-h-8 px-2.5 text-xs lowercase transition ${
                 viewMode === "shelf" ? "bg-accent text-accent-foreground" : "text-muted hover:text-foreground"
               }`}
             >
@@ -162,7 +173,7 @@ function Feed({ selectedUserId }: { selectedUserId: string | null }) {
             <button
               type="button"
               onClick={() => setViewMode("list")}
-              className={`min-h-11 px-3 text-sm lowercase transition ${
+              className={`min-h-8 px-2.5 text-xs lowercase transition ${
                 viewMode === "list" ? "bg-accent text-accent-foreground" : "text-muted hover:text-foreground"
               }`}
             >
@@ -171,13 +182,6 @@ function Feed({ selectedUserId }: { selectedUserId: string | null }) {
           </div>
         </div>
       </div>
-
-      <Link
-        href="/upload"
-        className="mb-4 flex min-h-11 items-center justify-center rounded-md bg-accent text-sm font-medium lowercase text-accent-foreground transition hover:brightness-110 md:hidden"
-      >
-        + new idea
-      </Link>
 
       {visibleThreads.length === 0 ? (
         <p className="text-muted">

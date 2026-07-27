@@ -211,7 +211,7 @@ export function UploadForm({
     <form onSubmit={handleSubmit} className="space-y-5">
       {!isEditing && isReply && (
         <div>
-          <span className="mb-1 block text-sm text-muted">Reply type</span>
+          <span className="mb-1 block text-sm text-foreground">Reply type</span>
           <div className="inline-flex rounded-md border border-line p-1">
             <button
               type="button"
@@ -241,7 +241,7 @@ export function UploadForm({
 
       {!isReply && (
         <div>
-          <label htmlFor="title" className="mb-1 block text-sm text-muted">
+          <label htmlFor="title" className="mb-1 block text-sm text-foreground">
             Title
           </label>
           <input
@@ -264,7 +264,7 @@ export function UploadForm({
 
       {!isTextReply && (
         <div>
-          <span className="mb-1 block text-sm text-muted">Audio</span>
+          <span className="mb-1 block text-sm text-foreground">Audio</span>
           {existingAudioUrl && !audioFile && (
             <p className="mb-2 text-xs text-muted">
               Current:{" "}
@@ -293,7 +293,7 @@ export function UploadForm({
 
       {!isReply && (
         <div>
-          <label htmlFor="cover" className="mb-1 block text-sm text-muted">
+          <label htmlFor="cover" className="mb-1 block text-sm text-foreground">
             Cover art (optional)
           </label>
           {existingCoverUrl && !coverFile && !coverRemoved && (
@@ -325,7 +325,7 @@ export function UploadForm({
       )}
 
       <div>
-        <label htmlFor="notes" className="mb-1 block text-sm text-muted">
+        <label htmlFor="notes" className="mb-1 block text-sm text-foreground">
           {isTextReply ? "Your reply" : "Notes (chords, description, etc.)"}
         </label>
         <div className="mb-2 flex flex-wrap gap-2">
