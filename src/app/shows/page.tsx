@@ -7,6 +7,7 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
 import { StatusGauge } from "@/components/StatusGauge";
 import { SwipeActions } from "@/components/SwipeActions";
+import { SongLinksMenu } from "@/components/SongLinksMenu";
 import { splitTitleArtist, type CoverSong } from "@/lib/coverSongs";
 
 type Show = {
@@ -104,12 +105,13 @@ function SetlistSong({
               <span className="text-foreground">{songTitle}</span>
               {artist && <span className="whitespace-nowrap text-muted">- {artist}</span>}
             </div>
-            <div className="flex shrink-0 items-center gap-3">
+            <div className="flex shrink-0 items-center gap-2">
               {coverSong ? (
                 <StatusGauge status={coverSong.status} />
               ) : (
                 <span className="text-xs lowercase text-muted">original</span>
               )}
+              <SongLinksMenu songTitle={songTitle} artist={artist} />
             </div>
           </div>
         </SwipeActions>

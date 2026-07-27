@@ -7,6 +7,7 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
 import { StatusGauge } from "@/components/StatusGauge";
 import { SwipeActions } from "@/components/SwipeActions";
+import { SongLinksMenu } from "@/components/SongLinksMenu";
 import {
   STATUSES,
   STATUS_ORDER,
@@ -369,11 +370,12 @@ function CoversPageContent() {
                         <span className="text-foreground">{songTitle}</span>
                         {artist && <span className="whitespace-nowrap text-muted">- {artist}</span>}
                       </div>
-                      <div className="flex shrink-0 items-center gap-4">
+                      <div className="flex shrink-0 items-center gap-2">
                         <StatusGauge
                           status={song.status}
                           onChange={(status) => handleStatusChange(song.id, status)}
                         />
+                        <SongLinksMenu songTitle={songTitle} artist={artist} />
                       </div>
                     </div>
                   </SwipeActions>
