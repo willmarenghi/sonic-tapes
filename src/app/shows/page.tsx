@@ -7,7 +7,7 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
 import { StatusGauge } from "@/components/StatusGauge";
 import { SwipeActions } from "@/components/SwipeActions";
-import { SongLinksMenu } from "@/components/SongLinksMenu";
+import { SongLinksPanel } from "@/components/SongLinksPanel";
 import { splitTitleArtist, type CoverSong } from "@/lib/coverSongs";
 
 type Show = {
@@ -77,12 +77,16 @@ function SetlistSong({
   onRemove,
   onDragStart,
   isDragging,
+  expanded,
+  onToggle,
 }: {
   song: ShowSong;
   coverSong: CoverSong | null;
   onRemove: (id: string) => void;
   onDragStart: (songId: string) => void;
   isDragging: boolean;
+  expanded: boolean;
+  onToggle: () => void;
 }) {
   const { songTitle, artist } = splitTitleArtist(song.title);
   return (
@@ -100,21 +104,21 @@ function SetlistSong({
       </button>
       <div className="min-w-0 flex-1">
         <SwipeActions actions={[{ label: "Remove", onClick: () => onRemove(song.id) }]}>
-          <div className="flex items-center justify-between gap-3 py-2">
+          <div onClick={onToggle} className="flex cursor-pointer items-center justify-between gap-3 py-2">
             <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-1.5">
               <span className="text-foreground">{songTitle}</span>
               {artist && <span className="whitespace-nowrap text-muted">- {artist}</span>}
             </div>
-            <div className="flex shrink-0 items-center gap-2">
+            <div className="flex shrink-0 items-center" onClick={(e) => e.stopPropagation()}>
               {coverSong ? (
                 <StatusGauge status={coverSong.status} />
               ) : (
                 <span className="text-xs lowercase text-muted">original</span>
               )}
-              <SongLinksMenu songTitle={songTitle} artist={artist} />
             </div>
           </div>
         </SwipeActions>
+        {expanded && <SongLinksPanel songTitle={songTitle} artist={artist} />}
       </div>
     </li>
   );
@@ -140,6 +144,7 @@ function ShowsPageContent() {
   const [savingEdit, setSavingEdit] = useState(false);
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [expandedSongId, setExpandedSongId] = useState<string | null>(null);
   const [songKind, setSongKind] = useState<Record<string, ShowSongKind>>({});
   const [songTitleDraft, setSongTitleDraft] = useState<Record<string, string>>({});
   const [songCoverDraft, setSongCoverDraft] = useState<Record<string, string>>({});
@@ -554,6 +559,10 @@ function ShowsPageContent() {
                             onRemove={handleRemoveSong}
                             onDragStart={(songId) => startDrag(show.id, songsForShow, songId)}
                             isDragging={dragState?.draggingId === song.id}
+                            expanded={expandedSongId === song.id}
+                            onToggle={() =>
+                              setExpandedSongId((prev) => (prev === song.id ? null : song.id))
+                            }
                           />
                         ))}
                       </ul>

@@ -7,7 +7,7 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/AppShell";
 import { StatusGauge } from "@/components/StatusGauge";
 import { SwipeActions } from "@/components/SwipeActions";
-import { SongLinksMenu } from "@/components/SongLinksMenu";
+import { SongLinksPanel } from "@/components/SongLinksPanel";
 import {
   STATUSES,
   STATUS_ORDER,
@@ -60,6 +60,7 @@ function CoversPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [sortMode, setSortMode] = useState<SortMode>("date");
+  const [expandedSongId, setExpandedSongId] = useState<string | null>(null);
 
   const [addToSetlistFor, setAddToSetlistFor] = useState<CoverSong | null>(null);
   const [newSetlistMode, setNewSetlistMode] = useState(false);
@@ -157,6 +158,10 @@ function CoversPageContent() {
       return;
     }
     setReloadKey((k) => k + 1);
+  }
+
+  function toggleLinks(id: string) {
+    setExpandedSongId((prev) => (prev === id ? null : id));
   }
 
   function openAddToSetlist(song: CoverSong) {
@@ -365,20 +370,28 @@ function CoversPageContent() {
                       { label: "Remove", onClick: () => handleDelete(song.id) },
                     ]}
                   >
-                    <div className="flex items-center justify-between gap-3 px-4 py-3">
+                    <div
+                      onClick={() => toggleLinks(song.id)}
+                      className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3"
+                    >
                       <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-1.5">
                         <span className="text-foreground">{songTitle}</span>
                         {artist && <span className="whitespace-nowrap text-muted">- {artist}</span>}
                       </div>
-                      <div className="flex shrink-0 items-center gap-2">
+                      <div
+                        className="flex shrink-0 items-center gap-2"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <StatusGauge
                           status={song.status}
                           onChange={(status) => handleStatusChange(song.id, status)}
                         />
-                        <SongLinksMenu songTitle={songTitle} artist={artist} />
                       </div>
                     </div>
                   </SwipeActions>
+                  {expandedSongId === song.id && (
+                    <SongLinksPanel songTitle={songTitle} artist={artist} />
+                  )}
                 </li>
               );
             })}
