@@ -28,3 +28,26 @@ export function splitTitleArtist(title: string): { songTitle: string; artist: st
     artist: title.slice(separatorIndex + 3),
   };
 }
+
+export function normalizeTitle(title: string): string {
+  return title.trim().toLowerCase();
+}
+
+export function findDuplicateCoverSong(
+  songs: CoverSong[],
+  title: string
+): CoverSong | undefined {
+  const target = normalizeTitle(title);
+  return songs.find((s) => normalizeTitle(s.title) === target);
+}
+
+export const DUPLICATE_TITLE_ERROR = "That song's already on the cover list.";
+
+export function isDuplicateTitleError(err: unknown): boolean {
+  return (
+    !!err &&
+    typeof err === "object" &&
+    "code" in err &&
+    (err as { code?: unknown }).code === "23505"
+  );
+}

@@ -12,6 +12,9 @@ import {
   STATUSES,
   STATUS_ORDER,
   splitTitleArtist,
+  findDuplicateCoverSong,
+  isDuplicateTitleError,
+  DUPLICATE_TITLE_ERROR,
   type CoverSong,
   type CoverStatus,
 } from "@/lib/coverSongs";
@@ -61,6 +64,7 @@ function CoversPageContent() {
   const [reloadKey, setReloadKey] = useState(0);
   const [sortMode, setSortMode] = useState<SortMode>("date");
   const [expandedSongId, setExpandedSongId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
   const [addToSetlistFor, setAddToSetlistFor] = useState<CoverSong | null>(null);
   const [newSetlistMode, setNewSetlistMode] = useState(false);
@@ -101,17 +105,23 @@ function CoversPageContent() {
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     if (!currentUserId) return;
-    setAdding(true);
     setError(null);
 
+    const title = `${songTitle.trim()} - ${artist.trim()}`;
+    if (songs && findDuplicateCoverSong(songs, title)) {
+      setError(DUPLICATE_TITLE_ERROR);
+      return;
+    }
+
+    setAdding(true);
     const supabase = createClient();
     const { error } = await supabase
       .from("cover_songs")
-      .insert({ title: `${songTitle.trim()} - ${artist.trim()}`, added_by: currentUserId });
+      .insert({ title, added_by: currentUserId });
 
     setAdding(false);
     if (error) {
-      setError(errorMessage(error));
+      setError(isDuplicateTitleError(error) ? DUPLICATE_TITLE_ERROR : errorMessage(error));
       return;
     }
     setSongTitle("");
@@ -257,6 +267,10 @@ function CoversPageContent() {
     return STATUS_ORDER[a.status] - STATUS_ORDER[b.status];
   });
 
+  const filteredSongs = sortedSongs.filter((song) =>
+    song.title.toLowerCase().includes(search.trim().toLowerCase())
+  );
+
   const statusCounts = STATUSES.map((s) => ({
     ...s,
     count: songs.filter((song) => song.status === s.value).length,
@@ -310,12 +324,26 @@ function CoversPageContent() {
         </button>
       </form>
 
+      {songTitle.trim() &&
+        artist.trim() &&
+        findDuplicateCoverSong(songs, `${songTitle.trim()} - ${artist.trim()}`) && (
+          <p className="-mt-4 mb-4 text-sm text-yellow-500">{DUPLICATE_TITLE_ERROR}</p>
+        )}
+
       {error && <p className="mb-4 text-sm text-red-400">{error}</p>}
 
       {songs.length === 0 ? (
         <p className="text-muted">No cover songs yet — add one above.</p>
       ) : (
         <>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="search cover songs…"
+            className="mb-4 w-full rounded-md border border-line bg-surface px-3 py-2 text-base text-foreground outline-none placeholder:text-muted focus:border-accent"
+          />
+
           <div className="mb-4 flex items-center gap-2 text-sm">
             <span className="text-muted">sort:</span>
             <div className="flex shrink-0 overflow-hidden rounded-md border border-line">
@@ -355,8 +383,12 @@ function CoversPageContent() {
             </div>
           </div>
 
+          {filteredSongs.length === 0 && (
+            <p className="mb-2 text-sm text-muted">No cover songs match “{search}”.</p>
+          )}
+
           <ul className="space-y-2">
-            {sortedSongs.map((song) => {
+            {filteredSongs.map((song) => {
               const { songTitle, artist } = splitTitleArtist(song.title);
               return (
                 <li key={song.id} className="overflow-hidden rounded-lg border-2 border-line">

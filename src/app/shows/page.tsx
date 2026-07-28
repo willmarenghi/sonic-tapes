@@ -8,7 +8,13 @@ import { AppShell } from "@/components/AppShell";
 import { StatusGauge } from "@/components/StatusGauge";
 import { SwipeActions } from "@/components/SwipeActions";
 import { SongLinksPanel } from "@/components/SongLinksPanel";
-import { splitTitleArtist, type CoverSong } from "@/lib/coverSongs";
+import {
+  splitTitleArtist,
+  findDuplicateCoverSong,
+  isDuplicateTitleError,
+  DUPLICATE_TITLE_ERROR,
+  type CoverSong,
+} from "@/lib/coverSongs";
 
 type Show = {
   id: string;
@@ -151,6 +157,7 @@ function ShowsPageContent() {
   const [songCoverQuery, setSongCoverQuery] = useState<Record<string, string>>({});
   const [openSuggestionsFor, setOpenSuggestionsFor] = useState<string | null>(null);
   const [addingSongFor, setAddingSongFor] = useState<string | null>(null);
+  const [creatingCoverFor, setCreatingCoverFor] = useState<string | null>(null);
   const coverInputWrapperRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const showCardRefs = useRef<Record<string, HTMLLIElement | null>>({});
   const [mobileSuggestionRect, setMobileSuggestionRect] = useState<{
@@ -387,6 +394,42 @@ function ShowsPageContent() {
     setSongCoverDraft((prev) => ({ ...prev, [showId]: "" }));
     setSongCoverQuery((prev) => ({ ...prev, [showId]: "" }));
     setReloadKey((k) => k + 1);
+  }
+
+  async function handleCreateCoverAndSelect(showId: string) {
+    if (!currentUserId) return;
+    const title = (songCoverQuery[showId] ?? "").trim();
+    if (!title) return;
+
+    const duplicate = findDuplicateCoverSong(coverSongs, title);
+    if (duplicate) {
+      setSongCoverDraft((prev) => ({ ...prev, [showId]: duplicate.id }));
+      setSongCoverQuery((prev) => ({ ...prev, [showId]: duplicate.title }));
+      setOpenSuggestionsFor(null);
+      return;
+    }
+
+    setCreatingCoverFor(showId);
+    setError(null);
+
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("cover_songs")
+      .insert({ title, added_by: currentUserId })
+      .select()
+      .single();
+
+    setCreatingCoverFor(null);
+    if (error || !data) {
+      setError(isDuplicateTitleError(error) ? DUPLICATE_TITLE_ERROR : errorMessage(error));
+      return;
+    }
+
+    const cover = data as CoverSong;
+    setCoverSongs((prev) => [...prev, cover]);
+    setSongCoverDraft((prev) => ({ ...prev, [showId]: cover.id }));
+    setSongCoverQuery((prev) => ({ ...prev, [showId]: cover.title }));
+    setOpenSuggestionsFor(null);
   }
 
   async function handleRemoveSong(id: string) {
@@ -660,9 +703,13 @@ function ShowsPageContent() {
                           />
                           {openSuggestionsFor === show.id &&
                             (() => {
-                              const query = (songCoverQuery[show.id] ?? "").trim().toLowerCase();
+                              const rawQuery = (songCoverQuery[show.id] ?? "").trim();
+                              const query = rawQuery.toLowerCase();
                               const matches = coverSongs.filter((c) =>
                                 c.title.toLowerCase().includes(query)
+                              );
+                              const exactMatch = coverSongs.some(
+                                (c) => c.title.toLowerCase() === query
                               );
                               return (
                                 <ul
@@ -677,7 +724,7 @@ function ShowsPageContent() {
                                       : "absolute inset-x-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-md border border-line bg-surface shadow-lg shadow-black/30"
                                   }
                                 >
-                                  {matches.length === 0 ? (
+                                  {matches.length === 0 && rawQuery === "" ? (
                                     <li className="px-3 py-2 text-sm text-muted">no matches</li>
                                   ) : (
                                     matches.map((c) => (
@@ -697,6 +744,21 @@ function ShowsPageContent() {
                                         </button>
                                       </li>
                                     ))
+                                  )}
+                                  {rawQuery !== "" && !exactMatch && (
+                                    <li>
+                                      <button
+                                        type="button"
+                                        onMouseDown={(e) => e.preventDefault()}
+                                        disabled={creatingCoverFor === show.id}
+                                        onClick={() => handleCreateCoverAndSelect(show.id)}
+                                        className="block w-full border-t border-dashed border-line-dashed px-3 py-2 text-left text-sm text-accent hover:bg-line disabled:opacity-60"
+                                      >
+                                        {creatingCoverFor === show.id
+                                          ? "Adding…"
+                                          : `+ add “${rawQuery}” as new cover song`}
+                                      </button>
+                                    </li>
                                   )}
                                 </ul>
                               );
