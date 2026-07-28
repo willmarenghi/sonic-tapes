@@ -34,11 +34,9 @@ export type SwipeAction = {
 export function SwipeActions({
   actions,
   children,
-  contentClassName,
 }: {
   actions: SwipeAction[];
   children: React.ReactNode;
-  contentClassName?: string;
 }) {
   const revealWidth = ACTION_WIDTH * actions.length;
   const [offset, setOffset] = useState(0);
@@ -152,7 +150,7 @@ export function SwipeActions({
         ))}
       </div>
       <div
-        className={`relative select-none transition-transform duration-150 ease-out ${contentClassName ?? "bg-surface"}`}
+        className="relative select-none bg-surface transition-transform duration-150 ease-out"
         style={{ transform: `translateX(${offset}px)`, touchAction: "pan-y" }}
         onPointerDown={handlePointerDown}
         onClickCapture={handleClickCapture}
