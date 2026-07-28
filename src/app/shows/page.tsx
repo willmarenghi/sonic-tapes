@@ -96,10 +96,13 @@ function SetlistSong({
   onToggle: () => void;
 }) {
   const { songTitle, artist } = splitTitleArtist(song.title);
+  const isOriginal = song.kind === "original";
   return (
     <li
       data-song-row={song.id}
-      className={`flex items-center gap-3 transition-opacity ${isDragging ? "opacity-40" : ""}`}
+      className={`flex items-center gap-3 -mx-4 px-4 transition-opacity ${
+        isDragging ? "opacity-40" : ""
+      } ${isOriginal ? "bg-accent/20" : ""}`}
     >
       <button
         type="button"
