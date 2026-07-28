@@ -434,7 +434,7 @@ function CoversPageContent() {
                   {addedByMember && (
                     <span
                       title={`added by ${addedByMember.name}`}
-                      className="absolute left-0 top-6 z-10 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-background text-xs font-bold"
+                      className="absolute left-0 top-6 z-10 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-background text-xs font-bold lowercase"
                       style={{
                         background: AVATAR_COLORS[memberIndex % AVATAR_COLORS.length],
                         color: "var(--accent-foreground)",
