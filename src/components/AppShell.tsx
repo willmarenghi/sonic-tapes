@@ -106,7 +106,7 @@ function BandRoster({
             >
               {getInitials(member.name)}
             </span>
-            {member.name}
+            {member.name.replace(/\s+/g, "")}
           </button>
         ))}
 
