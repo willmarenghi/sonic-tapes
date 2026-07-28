@@ -321,7 +321,7 @@ function CoversPageContent() {
         <button
           type="submit"
           disabled={adding}
-          className="min-h-11 shrink-0 rounded-md bg-accent px-4 text-sm font-medium lowercase text-accent-foreground transition hover:brightness-110 disabled:opacity-60"
+          className="min-h-11 shrink-0 rounded-md bg-accent px-4 text-sm font-medium lowercase text-accent-foreground transition hover:brightness-110 active:scale-95 active:brightness-110 disabled:opacity-60"
         >
           {adding ? "Adding…" : "Add"}
         </button>
@@ -513,7 +513,7 @@ function CoversPageContent() {
                   <button
                     type="submit"
                     disabled={creatingSetlist}
-                    className="min-h-10 flex-1 rounded-md bg-accent px-3 text-sm font-medium lowercase text-accent-foreground transition hover:brightness-110 disabled:opacity-60"
+                    className="min-h-10 flex-1 rounded-md bg-accent px-3 text-sm font-medium lowercase text-accent-foreground transition hover:brightness-110 active:scale-95 active:brightness-110 disabled:opacity-60"
                   >
                     {creatingSetlist ? "Creating…" : "Create & add"}
                   </button>

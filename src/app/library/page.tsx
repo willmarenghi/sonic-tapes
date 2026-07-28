@@ -153,7 +153,7 @@ function Feed({ selectedUserId }: { selectedUserId: string | null }) {
 
         <Link
           href="/upload"
-          className="flex min-h-11 items-center justify-center rounded-md bg-accent text-sm font-medium lowercase text-accent-foreground transition hover:brightness-110"
+          className="flex min-h-11 items-center justify-center rounded-md bg-accent text-sm font-medium lowercase text-accent-foreground transition hover:brightness-110 active:scale-95 active:brightness-110"
         >
           + new idea
         </Link>

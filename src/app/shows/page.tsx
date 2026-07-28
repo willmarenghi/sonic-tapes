@@ -564,7 +564,7 @@ function ShowsPageContent() {
         <button
           type="submit"
           disabled={adding}
-          className="min-h-11 w-full shrink-0 rounded-md bg-accent px-4 text-sm font-medium lowercase text-accent-foreground transition hover:brightness-110 disabled:opacity-60 sm:w-auto"
+          className="min-h-11 w-full shrink-0 rounded-md bg-accent px-4 text-sm font-medium lowercase text-accent-foreground transition hover:brightness-110 active:scale-95 active:brightness-110 disabled:opacity-60 sm:w-auto"
         >
           {adding ? "Adding…" : "Add"}
         </button>
@@ -834,7 +834,7 @@ function ShowsPageContent() {
                         type="button"
                         onClick={() => handleAddSong(show.id)}
                         disabled={addingSongFor === show.id}
-                        className="min-h-9 shrink-0 rounded-md bg-accent px-3 text-xs font-medium lowercase text-accent-foreground transition hover:brightness-110 disabled:opacity-60"
+                        className="min-h-9 shrink-0 rounded-md bg-accent px-3 text-xs font-medium lowercase text-accent-foreground transition hover:brightness-110 active:scale-95 active:brightness-110 disabled:opacity-60"
                       >
                         {addingSongFor === show.id ? "Adding…" : "Add"}
                       </button>

@@ -20,7 +20,7 @@ function HubTile({
   return (
     <Link
       href={href}
-      className="flex aspect-square w-full items-center justify-center rounded-md border-2 px-3 text-center text-sm font-medium lowercase transition hover:brightness-110"
+      className="flex aspect-square w-full items-center justify-center rounded-md border-2 px-3 text-center text-sm font-medium lowercase transition hover:brightness-110 active:scale-95 active:brightness-110"
       style={{ borderColor, color, background }}
     >
       {label}
@@ -39,7 +39,7 @@ export default function HomePage() {
 
           <Link
             href="/upload"
-            className="mt-8 flex min-h-11 w-full max-w-xs items-center justify-center rounded-md bg-accent px-4 text-sm font-medium lowercase text-accent-foreground transition hover:brightness-110"
+            className="mt-8 flex min-h-11 w-full max-w-xs items-center justify-center rounded-md bg-accent px-4 text-sm font-medium lowercase text-accent-foreground transition hover:brightness-110 active:scale-95 active:brightness-110"
           >
             + new idea
           </Link>
