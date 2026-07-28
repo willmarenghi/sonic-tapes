@@ -8,6 +8,7 @@ import { AppShell } from "@/components/AppShell";
 import { StatusGauge } from "@/components/StatusGauge";
 import { SwipeActions } from "@/components/SwipeActions";
 import { SongLinksPanel } from "@/components/SongLinksPanel";
+import { AVATAR_COLORS, getInitials, useBandMembers } from "@/lib/profiles";
 import {
   STATUSES,
   STATUS_ORDER,
@@ -65,6 +66,8 @@ function CoversPageContent() {
   const [sortMode, setSortMode] = useState<SortMode>("date");
   const [expandedSongId, setExpandedSongId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+
+  const members = useBandMembers();
 
   const [addToSetlistFor, setAddToSetlistFor] = useState<CoverSong | null>(null);
   const [newSetlistMode, setNewSetlistMode] = useState(false);
@@ -390,39 +393,55 @@ function CoversPageContent() {
           <ul className="space-y-2">
             {filteredSongs.map((song) => {
               const { songTitle, artist } = splitTitleArtist(song.title);
+              const memberIndex = members.findIndex((m) => m.id === song.added_by);
+              const addedByMember = memberIndex === -1 ? null : members[memberIndex];
               return (
-                <li key={song.id} className="overflow-hidden rounded-lg border-2 border-line">
-                  <SwipeActions
-                    actions={[
-                      {
-                        label: "Setlist",
-                        onClick: () => openAddToSetlist(song),
-                        className: "bg-accent text-accent-foreground",
-                      },
-                      { label: "Remove", onClick: () => handleDelete(song.id) },
-                    ]}
-                  >
-                    <div
-                      onClick={() => toggleLinks(song.id)}
-                      className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3"
+                <li key={song.id} className="relative">
+                  <div className="overflow-hidden rounded-lg border-2 border-line">
+                    <SwipeActions
+                      actions={[
+                        {
+                          label: "Setlist",
+                          onClick: () => openAddToSetlist(song),
+                          className: "bg-accent text-accent-foreground",
+                        },
+                        { label: "Remove", onClick: () => handleDelete(song.id) },
+                      ]}
                     >
-                      <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-1.5">
-                        <span className="text-foreground">{songTitle}</span>
-                        {artist && <span className="whitespace-nowrap text-muted">- {artist}</span>}
-                      </div>
                       <div
-                        className="flex shrink-0 items-center gap-2"
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={() => toggleLinks(song.id)}
+                        className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3"
                       >
-                        <StatusGauge
-                          status={song.status}
-                          onChange={(status) => handleStatusChange(song.id, status)}
-                        />
+                        <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-1.5">
+                          <span className="text-foreground">{songTitle}</span>
+                          {artist && <span className="whitespace-nowrap text-muted">- {artist}</span>}
+                        </div>
+                        <div
+                          className="flex shrink-0 items-center gap-2"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <StatusGauge
+                            status={song.status}
+                            onChange={(status) => handleStatusChange(song.id, status)}
+                          />
+                        </div>
                       </div>
-                    </div>
-                  </SwipeActions>
-                  {expandedSongId === song.id && (
-                    <SongLinksPanel songTitle={songTitle} artist={artist} />
+                    </SwipeActions>
+                    {expandedSongId === song.id && (
+                      <SongLinksPanel songTitle={songTitle} artist={artist} />
+                    )}
+                  </div>
+                  {addedByMember && (
+                    <span
+                      title={`added by ${addedByMember.name}`}
+                      className="absolute left-0 top-6 z-10 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-background text-xs font-bold"
+                      style={{
+                        background: AVATAR_COLORS[memberIndex % AVATAR_COLORS.length],
+                        color: "var(--accent-foreground)",
+                      }}
+                    >
+                      {getInitials(addedByMember.name)}
+                    </span>
                   )}
                 </li>
               );

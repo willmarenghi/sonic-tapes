@@ -86,6 +86,7 @@ function SetlistSong({
   isDragging,
   expanded,
   onToggle,
+  onStatusChange,
 }: {
   song: ShowSong;
   coverSong: CoverSong | null;
@@ -94,6 +95,7 @@ function SetlistSong({
   isDragging: boolean;
   expanded: boolean;
   onToggle: () => void;
+  onStatusChange: (coverSongId: string, status: CoverStatus) => void;
 }) {
   const { songTitle, artist } = splitTitleArtist(song.title);
   const isOriginal = song.kind === "original";
@@ -119,7 +121,10 @@ function SetlistSong({
             </div>
             <div className="flex shrink-0 items-center" onClick={(e) => e.stopPropagation()}>
               {coverSong ? (
-                <StatusGauge status={coverSong.status} />
+                <StatusGauge
+                  status={coverSong.status}
+                  onChange={(status) => onStatusChange(coverSong.id, status)}
+                />
               ) : (
                 <span className="text-xs lowercase text-muted">original</span>
               )}
@@ -470,6 +475,29 @@ function ShowsPageContent() {
     setReloadKey((k) => k + 1);
   }
 
+  async function handleCoverStatusChange(coverSongId: string, status: CoverStatus) {
+    setError(null);
+    const previous = coverSongs;
+    setCoverSongs((prev) => prev.map((c) => (c.id === coverSongId ? { ...c, status } : c)));
+
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("cover_songs")
+      .update({ status })
+      .eq("id", coverSongId)
+      .select();
+
+    if (error) {
+      setCoverSongs(previous);
+      setError(errorMessage(error));
+      return;
+    }
+    if (!data || data.length === 0) {
+      setCoverSongs(previous);
+      setError("Nothing was saved — make sure the latest Supabase migration has been run.");
+    }
+  }
+
   async function handleRemoveSong(id: string) {
     setError(null);
     const supabase = createClient();
@@ -675,6 +703,7 @@ function ShowsPageContent() {
                             onToggle={() =>
                               setExpandedSongId((prev) => (prev === song.id ? null : song.id))
                             }
+                            onStatusChange={handleCoverStatusChange}
                           />
                         ))}
                       </ul>
