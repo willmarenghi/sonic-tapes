@@ -207,7 +207,7 @@ function SidebarContent({
       <div className="min-h-8 flex-1" />
 
       <div className="border-t border-dashed border-line-dashed pt-4">
-        <p className="truncate text-sm text-muted">{label}</p>
+        <p className="truncate text-sm text-muted">{label.replace(/\s+/g, "")}</p>
         <button
           type="button"
           onClick={onSignOut}
