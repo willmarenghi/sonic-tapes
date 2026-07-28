@@ -221,7 +221,7 @@ function Feed({ selectedUserId }: { selectedUserId: string | null }) {
               onClick={() => setSelectedShelfThreadId(thread.id)}
               className="flex flex-col gap-2 text-left"
             >
-              <div className="relative aspect-square overflow-hidden rounded-md border border-accent">
+              <div className="relative aspect-square overflow-hidden rounded-md border border-accent transition active:scale-95 active:brightness-110">
                 {thread.cover_art_url ? (
                   <Image
                     src={thread.cover_art_url}
