@@ -14,6 +14,7 @@ import {
   isDuplicateTitleError,
   DUPLICATE_TITLE_ERROR,
   type CoverSong,
+  type CoverStatus,
 } from "@/lib/coverSongs";
 
 type Show = {
@@ -157,7 +158,13 @@ function ShowsPageContent() {
   const [songCoverQuery, setSongCoverQuery] = useState<Record<string, string>>({});
   const [openSuggestionsFor, setOpenSuggestionsFor] = useState<string | null>(null);
   const [addingSongFor, setAddingSongFor] = useState<string | null>(null);
-  const [creatingCoverFor, setCreatingCoverFor] = useState<string | null>(null);
+
+  const [newCoverModal, setNewCoverModal] = useState<{ showId: string } | null>(null);
+  const [newCoverTitle, setNewCoverTitle] = useState("");
+  const [newCoverArtist, setNewCoverArtist] = useState("");
+  const [newCoverStatus, setNewCoverStatus] = useState<CoverStatus>("not_started");
+  const [creatingCover, setCreatingCover] = useState(false);
+  const [newCoverError, setNewCoverError] = useState<string | null>(null);
   const coverInputWrapperRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const showCardRefs = useRef<Record<string, HTMLLIElement | null>>({});
   const [mobileSuggestionRect, setMobileSuggestionRect] = useState<{
@@ -396,40 +403,70 @@ function ShowsPageContent() {
     setReloadKey((k) => k + 1);
   }
 
-  async function handleCreateCoverAndSelect(showId: string) {
-    if (!currentUserId) return;
-    const title = (songCoverQuery[showId] ?? "").trim();
-    if (!title) return;
+  function openNewCoverModal(showId: string, query: string) {
+    const { songTitle, artist } = splitTitleArtist(query);
+    setNewCoverModal({ showId });
+    setNewCoverTitle(songTitle.trim());
+    setNewCoverArtist((artist ?? "").trim());
+    setNewCoverStatus("not_started");
+    setNewCoverError(null);
+    setOpenSuggestionsFor(null);
+  }
+
+  function closeNewCoverModal() {
+    setNewCoverModal(null);
+  }
+
+  async function handleCreateCoverAndAdd(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newCoverModal || !currentUserId) return;
+    const { showId } = newCoverModal;
+    const title = `${newCoverTitle.trim()} - ${newCoverArtist.trim()}`;
 
     const duplicate = findDuplicateCoverSong(coverSongs, title);
     if (duplicate) {
-      setSongCoverDraft((prev) => ({ ...prev, [showId]: duplicate.id }));
-      setSongCoverQuery((prev) => ({ ...prev, [showId]: duplicate.title }));
-      setOpenSuggestionsFor(null);
+      setNewCoverError(DUPLICATE_TITLE_ERROR);
       return;
     }
 
-    setCreatingCoverFor(showId);
-    setError(null);
+    setCreatingCover(true);
+    setNewCoverError(null);
 
     const supabase = createClient();
     const { data, error } = await supabase
       .from("cover_songs")
-      .insert({ title, added_by: currentUserId })
+      .insert({ title, status: newCoverStatus, added_by: currentUserId })
       .select()
       .single();
 
-    setCreatingCoverFor(null);
     if (error || !data) {
-      setError(isDuplicateTitleError(error) ? DUPLICATE_TITLE_ERROR : errorMessage(error));
+      setCreatingCover(false);
+      setNewCoverError(isDuplicateTitleError(error) ? DUPLICATE_TITLE_ERROR : errorMessage(error));
       return;
     }
 
     const cover = data as CoverSong;
+    const position = showSongs.filter((s) => s.show_id === showId).length;
+    const { error: showSongError } = await supabase.from("show_songs").insert({
+      show_id: showId,
+      kind: "cover",
+      title: cover.title,
+      cover_song_id: cover.id,
+      position,
+      added_by: currentUserId,
+    });
+
+    setCreatingCover(false);
+    if (showSongError) {
+      setNewCoverError(errorMessage(showSongError));
+      return;
+    }
+
     setCoverSongs((prev) => [...prev, cover]);
-    setSongCoverDraft((prev) => ({ ...prev, [showId]: cover.id }));
-    setSongCoverQuery((prev) => ({ ...prev, [showId]: cover.title }));
-    setOpenSuggestionsFor(null);
+    setSongCoverDraft((prev) => ({ ...prev, [showId]: "" }));
+    setSongCoverQuery((prev) => ({ ...prev, [showId]: "" }));
+    closeNewCoverModal();
+    setReloadKey((k) => k + 1);
   }
 
   async function handleRemoveSong(id: string) {
@@ -750,13 +787,10 @@ function ShowsPageContent() {
                                       <button
                                         type="button"
                                         onMouseDown={(e) => e.preventDefault()}
-                                        disabled={creatingCoverFor === show.id}
-                                        onClick={() => handleCreateCoverAndSelect(show.id)}
-                                        className="block w-full border-t border-dashed border-line-dashed px-3 py-2 text-left text-sm text-accent hover:bg-line disabled:opacity-60"
+                                        onClick={() => openNewCoverModal(show.id, rawQuery)}
+                                        className="block w-full border-t border-dashed border-line-dashed px-3 py-2 text-left text-sm text-accent hover:bg-line"
                                       >
-                                        {creatingCoverFor === show.id
-                                          ? "Adding…"
-                                          : `+ add “${rawQuery}” as new cover song`}
+                                        {`+ add “${rawQuery}” as new cover song`}
                                       </button>
                                     </li>
                                   )}
@@ -781,6 +815,70 @@ function ShowsPageContent() {
             );
           })}
         </ul>
+      )}
+
+      {newCoverModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 p-4 pt-16 sm:pt-24"
+          onClick={closeNewCoverModal}
+        >
+          <div
+            className="w-full max-w-sm rounded-lg border border-line bg-surface p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h2 className="min-w-0 truncate font-display text-lg lowercase text-foreground">
+                add a new cover song
+              </h2>
+              <button
+                type="button"
+                onClick={closeNewCoverModal}
+                aria-label="Close"
+                className="shrink-0 text-muted hover:text-foreground"
+              >
+                ✕
+              </button>
+            </div>
+
+            {newCoverError && <p className="mb-3 text-sm text-red-400">{newCoverError}</p>}
+
+            <form onSubmit={handleCreateCoverAndAdd} className="flex flex-col gap-3">
+              <label className="flex min-w-0 flex-col gap-1 text-xs lowercase text-muted">
+                song title
+                <input
+                  type="text"
+                  required
+                  value={newCoverTitle}
+                  onChange={(e) => setNewCoverTitle(e.target.value)}
+                  placeholder="song title"
+                  className="w-full min-w-0 rounded-md border border-line bg-surface px-3 py-2 text-base text-foreground outline-none placeholder:text-muted focus:border-accent"
+                />
+              </label>
+              <label className="flex min-w-0 flex-col gap-1 text-xs lowercase text-muted">
+                artist
+                <input
+                  type="text"
+                  required
+                  value={newCoverArtist}
+                  onChange={(e) => setNewCoverArtist(e.target.value)}
+                  placeholder="artist"
+                  className="w-full min-w-0 rounded-md border border-line bg-surface px-3 py-2 text-base text-foreground outline-none placeholder:text-muted focus:border-accent"
+                />
+              </label>
+              <div className="flex flex-col gap-1 text-xs lowercase text-muted">
+                progress
+                <StatusGauge status={newCoverStatus} onChange={setNewCoverStatus} />
+              </div>
+              <button
+                type="submit"
+                disabled={creatingCover}
+                className="min-h-10 rounded-md bg-accent px-3 text-sm font-medium lowercase text-accent-foreground transition hover:brightness-110 disabled:opacity-60"
+              >
+                {creatingCover ? "Adding…" : "Add to setlist & cover list"}
+              </button>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );
