@@ -47,7 +47,7 @@ function Feed({ selectedUserId }: { selectedUserId: string | null }) {
   const [reloadKey, setReloadKey] = useState(0);
   const [query, setQuery] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "shelf">(() =>
-    searchParams.get("view") === "list" ? "list" : "shelf"
+    searchParams.get("view") === "shelf" ? "shelf" : "list"
   );
   // undefined = no explicit choice yet, so a "?post=" deep link (coming back
   // from "Cancel" on a reply/edit form) wins; null = the user explicitly
@@ -163,21 +163,21 @@ function Feed({ selectedUserId }: { selectedUserId: string | null }) {
           <div className="flex shrink-0 overflow-hidden rounded-md border border-line">
             <button
               type="button"
-              onClick={() => setViewMode("shelf")}
-              className={`min-h-8 px-2.5 text-xs lowercase transition ${
-                viewMode === "shelf" ? "bg-accent text-accent-foreground" : "text-muted hover:text-foreground"
-              }`}
-            >
-              shelf
-            </button>
-            <button
-              type="button"
               onClick={() => setViewMode("list")}
               className={`min-h-8 px-2.5 text-xs lowercase transition ${
                 viewMode === "list" ? "bg-accent text-accent-foreground" : "text-muted hover:text-foreground"
               }`}
             >
               list
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("shelf")}
+              className={`min-h-8 px-2.5 text-xs lowercase transition ${
+                viewMode === "shelf" ? "bg-accent text-accent-foreground" : "text-muted hover:text-foreground"
+              }`}
+            >
+              shelf
             </button>
           </div>
         </div>

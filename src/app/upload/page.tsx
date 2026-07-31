@@ -12,7 +12,7 @@ function UploadPageContent() {
   const searchParams = useSearchParams();
   const editId = searchParams.get("edit");
   const replyTo = searchParams.get("replyTo") ?? undefined;
-  const returnView = searchParams.get("view") === "list" ? "list" : undefined;
+  const returnView = searchParams.get("view") === "shelf" ? "shelf" : undefined;
 
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [status, setStatus] = useState<"loading" | "not-allowed" | "ready">(

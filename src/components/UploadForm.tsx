@@ -40,7 +40,7 @@ export function UploadForm({
   editingPost,
 }: {
   defaultReplyTo?: string;
-  returnView?: "list";
+  returnView?: "shelf";
   editingPost?: Post;
 }) {
   const router = useRouter();
