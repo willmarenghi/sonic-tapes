@@ -64,11 +64,15 @@ export function AudioPlayer({ src }: { src: string }) {
 
     const onReady = () => setDuration(ws.getDuration());
     const onTimeupdate = (time: number) => setCurrentTime(time);
+    const onInteraction = (time: number) => setCurrentTime(time);
     const onPlay = () => setPlaying(true);
     const onPauseOrFinish = () => setPlaying(false);
 
     ws.on("ready", onReady);
     ws.on("timeupdate", onTimeupdate);
+    // Fires immediately on click/drag (before the debounced seek lands), so
+    // the time label tracks the cursor while scrubbing instead of lagging.
+    ws.on("interaction", onInteraction);
     ws.on("play", onPlay);
     ws.on("pause", onPauseOrFinish);
     ws.on("finish", onPauseOrFinish);
