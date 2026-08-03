@@ -16,6 +16,7 @@ import {
   type CoverSong,
   type CoverStatus,
 } from "@/lib/coverSongs";
+import { AVATAR_COLORS, getInitials, useBandMembers, type BandMember } from "@/lib/profiles";
 
 type Show = {
   id: string;
@@ -36,6 +37,7 @@ type ShowSong = {
   cover_song_id: string | null;
   position: number;
   created_at: string;
+  added_by: string | null;
 };
 
 type DragState = { showId: string; songs: ShowSong[]; draggingId: string } | null;
@@ -81,6 +83,8 @@ function errorMessage(err: unknown): string {
 function SetlistSong({
   song,
   coverSong,
+  addedByMember,
+  memberIndex,
   onRemove,
   onDragStart,
   isDragging,
@@ -90,6 +94,8 @@ function SetlistSong({
 }: {
   song: ShowSong;
   coverSong: CoverSong | null;
+  addedByMember: BandMember | null;
+  memberIndex: number;
   onRemove: (id: string) => void;
   onDragStart: (songId: string) => void;
   isDragging: boolean;
@@ -119,7 +125,19 @@ function SetlistSong({
               <span className={isOriginal ? "text-accent" : "text-foreground"}>{songTitle}</span>
               {artist && <span className="whitespace-nowrap text-muted">- {artist}</span>}
             </div>
-            <div className="flex shrink-0 items-center" onClick={(e) => e.stopPropagation()}>
+            <div className="flex shrink-0 items-center gap-2" onClick={(e) => e.stopPropagation()}>
+              {addedByMember && (
+                <span
+                  title={`added by ${addedByMember.name}`}
+                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold lowercase"
+                  style={{
+                    background: AVATAR_COLORS[memberIndex % AVATAR_COLORS.length],
+                    color: "var(--accent-foreground)",
+                  }}
+                >
+                  {getInitials(addedByMember.name)}
+                </span>
+              )}
               {coverSong ? (
                 <StatusGauge
                   status={coverSong.status}
@@ -141,6 +159,7 @@ function ShowsPageContent() {
   const [shows, setShows] = useState<Show[] | null>(null);
   const [showSongs, setShowSongs] = useState<ShowSong[]>([]);
   const [coverSongs, setCoverSongs] = useState<CoverSong[]>([]);
+  const members = useBandMembers();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -687,7 +706,9 @@ function ShowsPageContent() {
                   <div className="px-4 pb-3 pt-2">
                     {displaySongs.length > 0 && (
                       <ul className="divide-y divide-line">
-                        {displaySongs.map((song) => (
+                        {displaySongs.map((song) => {
+                          const memberIndex = members.findIndex((m) => m.id === song.added_by);
+                          return (
                           <SetlistSong
                             key={song.id}
                             song={song}
@@ -696,6 +717,8 @@ function ShowsPageContent() {
                                 ? (coverSongs.find((c) => c.id === song.cover_song_id) ?? null)
                                 : null
                             }
+                            addedByMember={memberIndex === -1 ? null : members[memberIndex]}
+                            memberIndex={memberIndex}
                             onRemove={handleRemoveSong}
                             onDragStart={(songId) => startDrag(show.id, songsForShow, songId)}
                             isDragging={dragState?.draggingId === song.id}
@@ -705,7 +728,8 @@ function ShowsPageContent() {
                             }
                             onStatusChange={handleCoverStatusChange}
                           />
-                        ))}
+                          );
+                        })}
                       </ul>
                     )}
 
