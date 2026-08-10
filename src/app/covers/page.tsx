@@ -379,7 +379,7 @@ function CoversPageContent() {
                     setStatusSortVariant("red");
                   } else {
                     setStatusSortVariant((prev) =>
-                      prev === "red" ? "green" : prev === "green" ? "yellow" : "green"
+                      prev === "red" ? "yellow" : prev === "yellow" ? "green" : "red"
                     );
                   }
                 }}
