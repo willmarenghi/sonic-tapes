@@ -21,6 +21,13 @@ import {
 } from "@/lib/coverSongs";
 
 type SortMode = "alpha" | "status" | "date";
+type StatusSortVariant = "red" | "green" | "yellow";
+
+const STATUS_VARIANT_BASE: Record<StatusSortVariant, CoverStatus> = {
+  red: "not_started",
+  green: "ready",
+  yellow: "partial",
+};
 
 type Show = {
   id: string;
@@ -64,6 +71,7 @@ function CoversPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [sortMode, setSortMode] = useState<SortMode>("date");
+  const [statusSortVariant, setStatusSortVariant] = useState<StatusSortVariant>("red");
   const [expandedSongId, setExpandedSongId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
@@ -267,7 +275,9 @@ function CoversPageContent() {
   const sortedSongs = [...songs].sort((a, b) => {
     if (sortMode === "alpha") return a.title.localeCompare(b.title);
     if (sortMode === "date") return b.created_at.localeCompare(a.created_at);
-    return STATUS_ORDER[a.status] - STATUS_ORDER[b.status];
+    const baseOrder = STATUS_ORDER[STATUS_VARIANT_BASE[statusSortVariant]];
+    const rank = (status: CoverStatus) => (STATUS_ORDER[status] - baseOrder + 3) % 3;
+    return rank(a.status) - rank(b.status);
   });
 
   const filteredSongs = sortedSongs.filter((song) =>
@@ -363,7 +373,16 @@ function CoversPageContent() {
               </button>
               <button
                 type="button"
-                onClick={() => setSortMode("status")}
+                onClick={() => {
+                  if (sortMode !== "status") {
+                    setSortMode("status");
+                    setStatusSortVariant("red");
+                  } else {
+                    setStatusSortVariant((prev) =>
+                      prev === "red" ? "green" : prev === "green" ? "yellow" : "green"
+                    );
+                  }
+                }}
                 className={`min-h-9 px-3 text-xs lowercase transition ${
                   sortMode === "status"
                     ? "bg-accent text-accent-foreground"
